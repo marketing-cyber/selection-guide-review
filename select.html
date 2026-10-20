@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.png">
+<title>Wellforces Selection Guide — Selector</title>
+<script>
+/* Theme before first paint: the saved choice, else the system's. */
+(function(){ var t; try { t = localStorage.getItem('WF_THEME'); } catch (e) {}
+  if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.dataset.theme = t; })();
+</script>
+<style>
+  /* Two colour themes on one layout: light (default) and dark, chosen with the
+     sun/moon button and remembered per browser; first visit follows the system. */
+  :root{--hd:linear-gradient(100deg,#0B4A8A 0%,#2F72BE 60%,#58B2E6 100%);--bg:#E9EDF2;--surface:#fff;--surface-2:#F7F9FB;--line:#DCE1E8;--track:#DDE3EA;--line-2:#EFF2F5;
+        --ink:#1B2430;--muted:#667284;--faint:#8A94A3;
+        --accent:#0B5394;--accent-ink:#0B5394;--accent-soft:#EAF2FB;--accent-line:#B9D3EE;
+        --hover:#F6F8FB;--sel:#EDF4FC;--grp:#EEF3F9;--chip-line:#DCE1E8;--input:#EFF2F6;
+        --btn:#0B5394;--btn-ink:#fff;--danger:#C0392B;--danger-soft:#FBEAEA;
+        --ok:#1B6B36;--ok-soft:#DDF2E3;--warn-soft:#FDF0E6;--warn:#9A4A12;
+        --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
+        --pop:0 12px 32px rgba(15,30,60,.18);
+        --royal:var(--accent);--link:var(--accent-ink);--slate:var(--muted);--pale:var(--grp)}
+  html[data-theme="dark"]{--hd:linear-gradient(100deg,#0A2747 0%,#123E6B 60%,#1B5A8F 100%);--bg:#0B1118;--surface:#151E28;--surface-2:#1A2531;--line:#263445;--track:#18222D;--line-2:#1D2834;
+        --ink:#DAE1E8;--muted:#93A0AE;--faint:#6E7B89;
+        --accent:#3D85C6;--accent-ink:#7DB3E8;--accent-soft:#16304A;--accent-line:#2C5680;
+        --hover:#1A2531;--sel:#14283C;--grp:#18232F;--chip-line:#2B3949;--input:#1B2632;
+        --btn:#3D85C6;--btn-ink:#fff;--danger:#F09A8F;--danger-soft:#3A1F1F;
+        --ok:#86D7A8;--ok-soft:#1D3A2A;--warn-soft:#3A2A1A;--warn:#F2B98A;
+        --shadow:0 1px 2px rgba(0,0,0,.3);--pop:0 12px 32px rgba(0,0,0,.5);color-scheme:dark}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:Inter,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);
+       color:var(--ink);font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+  .app{display:flex;flex-direction:column;height:100vh}
+  button,input,select{font-family:inherit;color:inherit}
+
+  /* ---- top bar ---- */
+  /* Blue gradient header, matching the guide's cover band. */
+  .top{display:flex;justify-content:space-between;align-items:center;background:var(--hd);color:#fff;
+       padding:0 18px;height:58px;flex:none;gap:14px}
+  .top .l{display:flex;align-items:center;gap:12px;white-space:nowrap;text-decoration:none}
+  .top .l:hover{opacity:.85}
+  .top .l img{height:24px;width:auto;display:block}
+  .top .l .lc{display:none}
+  .top .l span{color:rgba(255,255,255,.75);font-size:12.5px;font-weight:600;padding-left:12px;border-left:1px solid rgba(255,255,255,.3)}
+  .top .r{display:flex;gap:8px;align-items:center}
+  .search{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:8px 12px 8px 32px;
+          width:260px;font-size:12.5px;outline:none;
+          background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.4'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+          background-repeat:no-repeat;background-position:11px center}
+  .search:focus{border-color:rgba(255,255,255,.55);background-color:rgba(255,255,255,.24)}
+  .search::placeholder{color:rgba(255,255,255,.7)}
+  .exp{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.28);padding:8px 14px;border-radius:10px;
+       font-size:12px;font-weight:600;cursor:pointer}
+  .exp:hover{background:rgba(255,255,255,.24)}
+  #genTop{background:#fff;color:#0B5394;border-color:#fff;font-weight:700}
+  #genTop:hover{filter:brightness(1.08)}
+  .exp[disabled],#genTop[disabled]{opacity:.45;cursor:default;filter:none}
+  .themebtn{width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:15px}
+
+  /* ---- category switcher ---- */
+  .cats{display:flex;gap:6px;padding:12px 18px 0;flex:none;overflow:auto}
+  .cat{color:var(--muted);padding:7px 13px;font-size:12.5px;font-weight:600;cursor:pointer;border-radius:9px;
+       white-space:nowrap;border:1px solid transparent}
+  .cat:hover{color:var(--ink);background:var(--surface);border-color:var(--line)}
+  /* The open category is a filled tab. */
+  .cat.on{background:var(--btn);color:var(--btn-ink);border-color:var(--btn);box-shadow:var(--shadow)}
+  .cat b{color:var(--faint);font-weight:600;margin-left:6px;font-size:10.5px}
+  .cat.on b{color:rgba(255,255,255,.75)}
+
+  /* ---- three panels ---- */
+  .body{display:flex;flex:1;min-height:0;gap:12px;padding:12px 18px 16px}
+  .rail,.main,.tray{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+  .rail{width:236px;padding:0 14px 30px;overflow:auto;flex:none}
+  .rail::before{content:"Filters";display:block;position:sticky;top:0;z-index:1;background:var(--surface);
+        font-size:13px;font-weight:700;padding:14px 2px 10px;border-bottom:1px solid var(--line);margin-bottom:2px}
+  .facet{border-bottom:1px solid var(--line-2)}
+  .facet:last-child{border-bottom:none}
+  .fhd{display:flex;align-items:center;gap:6px;cursor:pointer;padding:11px 2px}
+  .fcar{color:var(--faint);font-size:9px;width:9px;flex:none}
+  .flabel{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;flex:1;
+          white-space:nowrap}
+  /* The chosen value rides on one line beside the label; a long one is cut with an
+     ellipsis (full text on hover) rather than wrapping the header into three lines. */
+  .fsum{font-size:10px;color:var(--btn-ink);background:var(--btn);border-radius:9px;padding:1px 7px;font-weight:700;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:92px;flex:none}
+  .fclr{color:var(--danger);font-size:12px;font-weight:700;cursor:pointer;padding:0 3px}
+  .fbody{padding:0 0 12px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;max-height:190px;overflow:auto}
+  .chip{border:1px solid var(--chip-line);background:var(--surface);border-radius:99px;padding:4px 10px;font-size:11.5px;
+        cursor:pointer;user-select:none;color:var(--ink)}
+  .chip:hover{border-color:var(--accent-line);background:var(--hover)}
+  .chip.on{background:var(--accent-soft);color:var(--accent-ink);border-color:var(--accent-line);font-weight:600}
+  .chip.dim{opacity:.32;cursor:default}
+  .range{display:flex;align-items:center;gap:6px;padding:2px 0}
+  .range input{width:74px;border:1px solid var(--chip-line);background:var(--surface);border-radius:8px;padding:6px 8px;font-size:12px;outline:none}
+  .range input:focus{border-color:var(--accent-line)}
+  .range span{color:var(--muted);font-size:11px}
+  .range .runit{font-weight:700;color:var(--ink)}
+
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+  .rhead{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);
+         border-bottom:1px solid var(--line);flex:none;gap:10px;flex-wrap:wrap}
+  .activef{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .fchip{background:var(--accent-soft);border-radius:99px;padding:3px 10px;font-size:11px;color:var(--accent-ink);
+         font-weight:600;cursor:pointer}
+  .fchip.clrall{background:var(--danger-soft);color:var(--danger)}
+  .fchip .x{opacity:.55;margin-left:5px}
+  .toolbtn{font-size:11.5px;color:var(--accent-ink);cursor:pointer;font-weight:600;margin-left:6px;padding:4px 8px;border-radius:7px;white-space:nowrap}
+  .toolbtn:hover{background:var(--accent-soft)}
+  .count{font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .tierwrap{display:flex;align-items:center;gap:6px;margin-left:8px;padding-left:12px;border-left:1px solid var(--line)}
+  .tierwrap label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+  .tierwrap select{border:1px solid var(--chip-line);border-radius:8px;padding:4px 7px;font-size:11.5px;
+                   font-weight:700;color:var(--accent-ink);background:var(--surface);cursor:pointer}
+
+  .grid{flex:1;overflow:auto;background:var(--surface)}
+  /* separate, not collapse: collapsed borders vanish under position:sticky cells */
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  thead th{position:sticky;top:0;z-index:2;background:var(--surface-2);color:var(--muted);font-size:10px;
+           padding:9px 8px;text-align:left;cursor:pointer;white-space:nowrap;font-weight:700;
+           text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--line)}
+  thead th:hover{color:var(--ink)}
+  /* Columns hug their content and the last one takes the spare width, so the
+     specs sit together instead of spreading across the panel. Everything reads
+     left-aligned. */
+  thead th{width:1%;white-space:normal;vertical-align:top;line-height:1.3;min-width:52px}
+  thead th.c-sku{white-space:nowrap}
+  thead th:last-child{width:auto}
+  thead th,tbody td{padding-right:18px}
+  thead th.num{text-align:left}
+  thead th.nosort{cursor:default}
+  .sarr{opacity:.8;font-size:8px;margin-left:4px;vertical-align:1px;color:var(--accent-ink)}
+  tbody td{padding:7px 8px;border-bottom:1px solid var(--line-2);font-size:12px;white-space:nowrap}
+  /* tabular figures so digits line up column-wise, not just at the right edge */
+  tbody td.num{text-align:left;font-variant-numeric:tabular-nums}
+  tbody tr{background:var(--surface)}
+  tr.grp{background:var(--grp)}
+  tr.grp td{background:inherit;color:var(--accent-ink);font-weight:700;font-size:11.5px;cursor:pointer;padding-top:9px;padding-bottom:9px;
+            border-top:1px solid var(--line)}
+  tr.grp td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+  tr.row{cursor:pointer}
+  tr.row:hover{background:var(--hover)}
+  tr.row.sel{background:var(--sel)}
+  /* An accessory belongs to the profile above it: tinted, indented, and labelled
+     with what it is, so it never reads as another product you could pick instead. */
+  tr.accrow td{background:var(--surface-2)}
+  tr.accrow.sel td{background:var(--sel)}
+  .acctog{font-size:10px;color:var(--accent-ink);cursor:pointer;font-weight:700;white-space:nowrap;
+          border:1px solid var(--accent-line);border-radius:99px;padding:1px 7px;margin-left:2px;background:var(--accent-soft)}
+  .acckid{padding-left:16px}
+  .accwhat{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;font-weight:700;margin-left:2px}
+  /* SKU column pinned: these grids run to 11 columns and scroll sideways, and a
+     row is unreadable once the code it belongs to has scrolled off. The cell
+     inherits its background so the row's hover/selected colour still shows. */
+  th.c-sku{position:sticky;left:0;z-index:3;background:var(--surface-2)}
+  td.c-sku{position:sticky;left:0;z-index:1;background:inherit}
+  td.c-sku .cell{display:flex;align-items:center;gap:8px}
+  tr.grp .gl{position:sticky;left:8px;display:inline-flex;align-items:center;gap:8px}
+  .ck{display:inline-block;width:15px;height:15px;border:1.5px solid var(--chip-line);border-radius:4px;
+      cursor:pointer;vertical-align:middle;flex:none;background:var(--surface)}
+  .ck.on{background:var(--btn);border-color:var(--btn);position:relative}
+  .ck.on::after{content:"";position:absolute;left:4px;top:1px;width:4px;height:8px;
+                border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  /* The code is text first and never a tick target: clicking it copies, dragging
+     selects. Ticking the row happens anywhere else on it. */
+  .sku{font-weight:700;user-select:text;cursor:copy;border-radius:4px;padding:1px 3px;margin:0 -3px}
+  .sku:hover{background:var(--accent-soft)}
+  .copied{background:var(--ok-soft) !important;color:var(--ok)}
+  /* "Wrap text": long spec values fold onto more lines instead of widening the grid.
+     Codes, prices and figures always stay on one line. */
+  body.wraptext td.long{white-space:normal;min-width:170px;line-height:1.35}
+  .wraptog{display:inline-flex;align-items:center;gap:5px;vertical-align:middle}
+  .wraptog::before{content:"";box-sizing:border-box;width:12px;height:12px;flex:none;border:1.5px solid var(--chip-line);
+        border-radius:3px;font-size:9px;line-height:9px;text-align:center;font-weight:900}
+  body.wraptext .wraptog::before{content:"\2713";background:var(--btn);border-color:var(--btn);color:#fff}
+  /* Same rule as the printed guide: text and specs from the left, prices right so
+     their figures line up. */
+  td.price{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+  thead th.price{text-align:right}
+  /* PIM photos carry a brand logo and model label in their top and bottom bands;
+     a wide frame crops to the product in the middle, as on the printed guide. */
+  td img{width:44px;height:26px;max-width:none;object-fit:cover;vertical-align:middle;border-radius:4px}
+  /* Product photos are shot on white: give them a white tile in the dark theme. */
+  html[data-theme="dark"] td img{background:#fff;padding:1px}
+  .warnpill{background:var(--danger-soft);color:var(--danger);border-radius:99px;padding:1px 7px;font-size:9.5px;
+            font-weight:700;margin-left:6px}
+
+  /* ---- selected-products tray ---- */
+  .tray{width:310px;display:flex;flex-direction:column;flex:none;overflow:hidden}
+  /* The tray is the output: a tinted head set it apart from the picking side. */
+  .thd{padding:12px 14px;flex:none;border-bottom:1px solid var(--accent-line);background:var(--accent-soft)}
+  .thd::before{content:"Your guide";display:block;font-size:10px;font-weight:700;text-transform:uppercase;
+        letter-spacing:.06em;color:var(--accent-ink);margin-bottom:7px}
+  .thd input{background:var(--surface);border:1px solid var(--accent-line);border-radius:9px;padding:8px 10px;font-size:13px;
+             width:100%;font-weight:700;outline:none}
+  .thd input:focus{border-color:var(--accent-line);background:var(--surface)}
+  .thd .sub{color:var(--muted);font-size:11px;margin-top:6px}
+  .tlist{flex:1;overflow:auto;padding:12px}
+  .tsec{margin-bottom:14px}
+  .tsec .sh{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+  .tsec .sh input{flex:1;border:1px solid transparent;border-radius:7px;padding:4px 7px;font-size:11px;
+                  font-weight:700;color:var(--accent-ink);background:transparent;text-transform:none;outline:none}
+  .tsec .sh input:hover{border-color:var(--line)}
+  .tsec .sh input:focus{border-color:var(--accent-line);background:var(--surface)}
+  .tsec .sh .del{color:var(--faint);cursor:pointer;font-size:12px}
+  .tsec .sh .del:hover{color:var(--danger)}
+  .titem{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line-2);
+         border-radius:9px;padding:6px 8px;margin-bottom:5px}
+  .titem .info{flex:1;min-width:0}
+  .titem .s{font-weight:700;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;cursor:copy;
+            border-radius:4px;user-select:text}
+  .titem .s:hover{background:var(--accent-soft)}
+  .titem .m{color:var(--muted);font-size:10.5px}
+  .titem .x{color:var(--faint);cursor:pointer;font-size:12px}
+  .titem .x:hover{color:var(--danger)}
+  .tfoot{border-top:1px solid var(--line);padding:12px;flex:none}
+  .btn{border:none;border-radius:10px;padding:10px 12px;font-weight:700;font-size:12.5px;cursor:pointer;width:100%}
+  .btn-p{background:var(--btn);color:var(--btn-ink)}
+  .btn-p:hover{filter:brightness(1.08)}
+  .btn-p[disabled]{opacity:.45;cursor:default;filter:none}
+  .btn-n{background:var(--input);color:var(--ink);margin-bottom:8px}
+  .btn-n:hover{background:var(--hover)}
+  .jump{display:inline-block;margin:6px 3px 0;padding:4px 11px;border-radius:99px;background:var(--btn);color:var(--btn-ink);
+        font-weight:700;cursor:pointer}
+  .empty{color:var(--muted);font-size:12px;text-align:center;padding:30px 12px;line-height:1.6}
+
+  /* ---- history panel ---- */
+  .hpanel{position:fixed;top:62px;right:18px;z-index:60;width:330px;max-height:70vh;overflow:auto;
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--pop);display:none}
+  .hpanel.open{display:block}
+  .hpanel .hh{padding:12px 14px;font-weight:700;font-size:12.5px;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:center}
+  .hpanel .hh .hclr{font-weight:500;font-size:11px;color:var(--muted);cursor:pointer}
+  .hpanel .hh .hclr:hover{color:var(--danger)}
+  .hitem{padding:10px 14px;border-bottom:1px solid var(--line-2);cursor:pointer}
+  .hitem:last-child{border-bottom:none}
+  .hitem:hover{background:var(--hover)}
+  .hitem .ht{font-weight:700;font-size:12px}
+  .hitem .hm{font-size:11px;color:var(--muted);margin-top:2px}
+  .hempty{padding:22px 14px;font-size:11.5px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <a class="l" href="select.html" title="Selector home"><img class="lc" src="logos/wellforces-full.png" alt="Wellforces"><img class="lw" src="logos/wellforces-full-white.png" alt="Wellforces"><span>Selection Guide</span></a>
+    <div class="r">
+      <input class="search" id="search" placeholder="Search SKU, series, brand…">
+      <button class="exp" id="histBtn" title="Past generated guides — click one to restore its selection">History</button>
+      <button class="exp" id="genTop" disabled>Generate guide · 0</button>
+      <button class="exp themebtn" id="themeBtn" title="Switch light / dark"></button>
+    </div>
+  </div>
+  <div class="cats" id="cats"></div>
+  <div class="body">
+    <div class="rail" id="rail"></div>
+    <div class="main">
+      <div class="rhead">
+        <div class="activef" id="activef"></div>
+        <div style="display:flex;align-items:center">
+          <span class="toolbtn" id="selAll">Select all shown</span>
+          <span class="toolbtn" id="copySkus" title="Copy the selected SKUs (or every SKU shown) to the clipboard">Copy SKUs</span>
+          <span class="toolbtn" id="clearSel">Clear</span>
+          <span class="toolbtn wraptog" id="wrapTog" title="Fold long spec text onto two lines">Wrap text</span>
+          <span class="tierwrap" id="tierwrap"><label for="tierSel">Price</label>
+            <select id="tierSel" title="Which price the grid shows, and the tier the guide opens at"></select>
+          </span>
+          <span class="count" id="count" style="margin-left:10px"></span>
+        </div>
+      </div>
+      <div class="grid" id="grid"></div>
+    </div>
+    <div class="tray">
+      <div class="thd">
+        <input id="gtitle" value="Selection Guide">
+        <div class="sub" id="tsub">Nothing selected</div>
+      </div>
+      <div class="tlist" id="tlist"></div>
+      <div class="tfoot">
+        <button class="btn btn-n" id="autoSec">Group by original section</button>
+        <button class="btn btn-p" id="genBtn" disabled>Generate guide ▸</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="hpanel" id="hpanel">
+  <div class="hh"><span>History</span><span class="hclr" id="histClr">clear</span></div>
+  <div id="hlist"></div>
+</div>
+
+<script src="catalogue.js"></script>
+<script src="guidemeta.js"></script>
+<script src="prices.js" onerror="window.__noPrices=1"></script>
+<script>
+/* Selector: filter the guide product base, tick what you want, generate a
+   tailored guide. Specs come from catalogue.js (rebuilt from PIM). guidemeta.js
+   supplies the sales-facing category, the section each SKU sat in previously,
+   and the columns PIM has no attribute for. */
+
+const D  = window.WF_DATA || {products:[], families:[]};
+const GM = window.WF_GUIDEMETA || {categories:{}, skus:{}, extraColumns:[]};
+const P  = window.WF_PRICES || null;
+
+const FAM = {}; (D.families||[]).forEach(f => FAM[f.key] = f);
+const BY_SKU = {}; D.products.forEach(p => BY_SKU[p.sku] = p);
+
+/* Attach category / section / extra columns onto each product. A SKU can belong
+   to several categories (a driver listed in both LED Driver and DALI Gear), so
+   it appears under each. */
+D.products.forEach(p => {
+  const m = GM.skus[p.sku] || {};
+  p._cats  = m.cats && m.cats.length ? m.cats : ['Other'];
+  p._secs  = m.secs || [];
+  p._extra = m.extra || {};
+});
+
+const CATS = Object.keys(GM.categories).length
+  ? Object.keys(GM.categories)
+  : [...new Set(D.products.flatMap(p => p._cats))];
+
+/* Which price the grid shows. Remembered between sessions -- a salesperson works
+   one tier for a whole session, and re-picking it on every reload is a nuisance.
+   Validated against the tiers this build actually carries before it is trusted. */
+function tierList(){
+  const t = [['retail','Retail']];
+  if (P) (P.catalogues||[]).forEach(c => { if (c !== 'All Products') t.push([c, c]); });
+  return t;
+}
+const TIERS = tierList();
+let savedTier = null;
+try { savedTier = localStorage.getItem('WF_SEL_TIER'); } catch (err) { /* opaque origin */ }
+
+const state = {
+  cat: CATS[0],
+  filters: {},          // key -> Set (multi) | {min,max} (range)
+  search: '',
+  sort: {k:'__sku', dir:1},
+  open: new Set(),
+  selected: new Map(),  // sku -> {section}
+  accOpen: new Set(),   // profile rows showing their accessories
+  sections: [],         // ordered section names
+  tier: TIERS.some(([v]) => v === savedTier) ? savedTier : 'retail',
+};
+
+const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* A value is a number only if the WHOLE string is one, give or take a unit
+   suffix. The old version stripped every non-digit and reparsed what was left,
+   so "100V~305V" became 100305 and "-40~85°C" became -4085. That made Input and
+   Operating Temp look numeric, which offered them as RANGE filters with bounds
+   like 12305 to 220240, right-aligned them, and sorted them numerically. */
+const NUM_RE = /^\s*([-+]?\d+(?:\.\d+)?)\s*(?:[A-Za-z°%µΩ]+)?\s*$/;
+const num = v => { const m = NUM_RE.exec(String(v)); return m ? parseFloat(m[1]) : null; };
+/* For ordering facet chips that are ranges ("9V~36V" before "85V~264V"): the
+   leading number only, never used for filtering or alignment. */
+const leadNum = v => { const m = /-?\d+(?:\.\d+)?/.exec(String(v)); return m ? parseFloat(m[0]) : null; };
+
+/* ---------- prices ----------
+   Lifted verbatim from guide.html, and it must stay verbatim: a tier is
+   round_half_up(retail x pct / 100) computed in ONE step with exact integer
+   arithmetic on scaled decimal strings. In floating point, 191.02 x 75% is
+   143.26499... so Math.floor(x*100+0.5) gives 143.26 where the trade price is
+   143.27. The grid and the printed guide must never disagree by a cent. */
+function scaled(s){
+  const str = String(s).trim();
+  const dot = str.indexOf('.');
+  if (dot < 0) return {n: BigInt(str), scale: 1n};
+  const decimals = str.length - dot - 1;
+  return {n: BigInt(str.replace('.', '')), scale: 10n ** BigInt(decimals)};
+}
+function tierCents(retailStr, pctStr){
+  const r = scaled(retailStr), p = scaled(pctStr);
+  const numer = r.n * p.n;
+  const denom = r.scale * p.scale;
+  return (2n * numer + denom) / (2n * denom);   // round half up
+}
+function tierPrice(sku){
+  const prod = BY_SKU[sku];
+  if (state.tier === 'retail') return prod && prod.price != null ? Number(prod.price) : null;
+  if (!P) return null;
+  const e = P.products[sku];
+  if (!e || !e.nzd || !e.tplcat) return null;
+  const cell = (P.template[e.tplcat] || {})[state.tier];
+  if (!cell) return null;
+  return Number(tierCents(e.nzd, cell.pct)) / 100;
+}
+const money = v => v == null ? '—' : '$' + Number(v).toFixed(2);
+const priceHeader = () => state.tier === 'retail' ? 'Retail' : state.tier;
+
+/* ---------- data shaping ---------- */
+function inCat(){ return D.products.filter(p => p._cats.includes(state.cat)); }
+
+/* PIM is inconsistent about whether a series label repeats its own brand: 12 of the
+   61 series here carry the prefix, 49 don't. The grid prints "Brand · Series", so a
+   prefixed one renders the brand twice ("Mean Well · Mean Well XLC Series"). Rather
+   than rename the shared PIM options — which would change the label on the website
+   and every export too — strip the prefix for display only. The bare name is used
+   only where it stays unambiguous: Envo and Ltech both have a "DALI Series", so
+   those two keep their brand wherever the label has to stand on its own. */
+let _seriesMaps = null;
+function seriesMaps(){
+  if (_seriesMaps) return _seriesMaps;
+  const norm = x => x.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const bareOf = p => {                       // drop a leading run of words spelling the brand
+    const s = p.series || '', nb = norm(p.brand || '');
+    if (!s || !nb) return s;
+    for (const re of [/^(\S+\s+\S+)\s+(.+)$/, /^(\S+)\s+(.+)$/]){
+      const m = s.match(re);
+      if (m && norm(m[1]) === nb) return m[2];
+    }
+    return s;
+  };
+  const owners = {};                          // bare label -> the brands that would claim it
+  for (const p of D.products){
+    if (!p.series) continue;
+    (owners[bareOf(p)] = owners[bareOf(p)] || new Set()).add(p.brand || '');
+  }
+  const short = {}, solo = {};
+  for (const p of D.products){
+    if (!p.series) continue;
+    const b = bareOf(p);
+    short[p.series] = b;                                  // brand is shown right beside it
+    solo[p.series]  = owners[b].size > 1 ? p.series : b;   // label has to identify itself
+  }
+  return (_seriesMaps = { short, solo });
+}
+const seriesShort = s => s ? (seriesMaps().short[s] || s) : (s || '');
+const seriesSolo  = s => s ? (seriesMaps().solo[s]  || s) : (s || '');
+
+function valOf(p, k){
+  if (k === '__sku')   return p.sku;
+  if (k === '__price') { const v = tierPrice(p.sku); return v == null ? '' : v; }
+  if (k === 'Brand')   return p.brand || '';
+  if (k === 'Series')  return seriesSolo(p.series);
+  if (p.a && p.a[k] != null && p.a[k] !== '') return p.a[k];
+  if (p._extra && p._extra[k] != null) return p._extra[k];
+  return '';
+}
+
+/* Facets are derived from the data actually present in this category rather than
+   from a fixed per-family config: these 6 categories span 9 PIM families, so no
+   single family's column list describes any of them. A field becomes a range
+   slider when every value parses as a number and there are enough distinct ones
+   for a range to mean anything, otherwise a multi-select. */
+/* Never a filter in any tab: dimensions (the Size column already carries them),
+   and free prose nobody filters on. */
+const FACET_SKIP = new Set(['Length','Width','Height','Size','Profile','Minimum Temperature',
+                            'Maximum Temperature','Standards Met','Grade','Note','Application',
+                            'Brightness','Colour']);
+
+/* Per-tab exclusions. Each tab is a different buying question, so the useful
+   filters differ: what narrows down a DIN rail PSU is not what narrows down an
+   extrusion. Excluded here rather than globally, so removing a filter from one tab
+   cannot quietly strip it from another.
+     LED Driver -- Series is already the grid's grouping header AND its own column,
+     so filtering by it duplicates what the eye is using to navigate; No. of Output
+     is single-output on nearly everything in this tab. */
+const CAT_FACET_SKIP = {
+  'LED Driver':   ['Series', 'No. of Output'],
+  'DIN Rail PSU': ['Series', 'No. of Output'],
+  'DALI Gear':    ['No. of Output'],
+  /* Package ("100Pcs/Bag") is a purchasing detail, not a selection criterion -- a
+     signwriter picks a module on run length, not bag size. Max Run replaces it.
+     "Max Series (MOQ)" is the same fact as Max Run, but as sheet text ("40Pcs/Chain")
+     it neither sorts nor ranges, so only the PIM number is offered.
+     Lumens stays: the sheet reads "/" on the two ChromaFlux RGB parts, whose
+     datasheets quote per-channel figures (R6 G22 B5), but build_guidemeta.py now
+     fills those from PIM so the column and the filter agree and both read a real
+     figure. Brightness is NOT unskipped here -- that would show the same number
+     twice under two names. */
+  'LED Sign Module': ['Package', 'Max Series (MOQ)'],
+  /* Mounting Info duplicates Extrusion Type: Corner Mounted/Surface Mounted/Recessed
+     against Corner - Surface/Linear - Surface/Linear - Recessed, product for product.
+     Extrusion Type is kept because it carries the profile shape as well as the
+     mounting, so it says everything Mounting Info does and more. */
+  'LED Extrusion': ['Mounting Info'],
+};
+
+const CAT_FACET_UNSKIP = {};
+
+/* Per-tab COLUMN exclusions, separate from the filters above -- a field can be
+   worth filtering on without being worth a column, and vice versa.
+     DIN Rail PSU -- Operation Mode is constant voltage on essentially every DIN
+     rail supply, so the column tells a reader nothing and it is blank on 162 of
+     the 271 anyway. */
+/* Never a column in any tab, whatever their frequency:
+     Type   -- a filter-only grouping; it exists on products that appear in several
+               tabs, so scoping it per-tab let it leak into LED Driver and DALI Gear.
+     Length/Width/Height -- the Size column is already L*W*H, so these repeat it a
+               third of a value at a time. (Profile is NOT here: on extrusions it is
+               a distinct, useful figure.) */
+const COL_SKIP = new Set(['Type', 'Length', 'Width', 'Height',
+                          'Minimum Temperature', 'Maximum Temperature']);
+
+const CAT_COL_SKIP = {
+  /* Operation Mode -- constant voltage on essentially every DIN rail supply, and
+     blank on 162 of the 271 anyway.
+     Waterproof -- all 271 are Non-waterproof, so the column repeats one word 271
+     times. (It is already absent from the filters: a one-value facet drops itself.)
+     Type -- a filter, not a column; Series already says which family a row is. */
+  'DIN Rail PSU': ['Operation Mode', 'Waterproof', 'Dimming Control'],
+  /* Rated Current -- a per-module figure nobody selects a sign module on; it stays
+     a filter. Dimming Control -- all 24 modules read "Dimmable", so the column
+     repeated one word 24 times. Voltage (Power Input) takes their place, promoted
+     through `pri` above. */
+  'LED Sign Module': ['Rated Current', 'Dimming Control'],
+  /* Operation Mode -- every one of the 65 strips is Constant Voltage, so the
+     column repeats one phrase 65 times. (It drops itself from the filters
+     automatically: a one-value facet is not offered.) */
+  'LED Strip': ['Operation Mode'],
+  /* Series repeats the SKU prefix (EXLP03 sits in "EXLP Series"); Diffuser Type and
+     Profile are both already carried by other columns -- Profile is W*H, which the
+     Size column shows in full. */
+  /* __price is hidden here for now: these profiles are priced PER METRE but sold in
+     2 m and 3 m sticks, so a bare figure next to a stick length reads as the price
+     of the stick. Remove '__price' to bring the column back. */
+  /* Finish Colour, Material and Warranty each repeat a single value down all ten
+     profile rows now that the accessories that varied them are nested. */
+  'LED Extrusion': ['Series', 'Diffuser Type', 'Profile', '__price',
+                    'Finish Colour', 'Material', 'Warranty Period'],
+};
+
+/* Columns added to a tab explicitly, regardless of ranking. The grid keeps only
+   the top 7 ranked fields, so a genuinely useful but low-priority column can never
+   win a slot -- and promoting it in `pri` would silently push another column out,
+   which is exactly the backfill churn the ranking was changed to avoid. These are
+   appended after the ranked set and before the pinned Size column. */
+const CAT_COL_ADD = {
+  // How short a piece can be cut -- the first thing a customer checks against a
+  // run length. "Cut Anywhere" on the COB strips, otherwise a fixed increment.
+  'LED Strip': ['Min Cut'],
+  // Stick length -- parsed from the subtitle in build_catalogue.py, because PIM's
+  // `length` field is the per-metre pricing unit, not how long one piece is.
+  'LED Extrusion': ['Metres per Length'],
+};
+const skipFor = cat => {
+  const s = new Set([...FACET_SKIP, ...(CAT_FACET_SKIP[cat] || [])]);
+  (CAT_FACET_UNSKIP[cat] || []).forEach(k => s.delete(k));
+  return s;
+};
+
+/* Some fields carry too many distinct values to be filterable. Efficiency arrives
+   as free text from the guide sheets -- "87%", "~87%", "85.5~89%", "N/A" -- which
+   gave 36 chips across 271 products, several of them meaning the same thing.
+   Grouping applies to the FILTER only; the column still shows the value exactly as
+   written, so no precision is lost from the printed guide.
+   Banded on the LOWEST figure quoted, so a band reads as a guarantee: a product in
+   "90-95%" is at least 90% even when its sheet says "89~91%". */
+const FACET_BUCKET = {
+  'Efficiency': v => {
+    const m = String(v).match(/\d+(?:\.\d+)?/);
+    if (!m) return null;                      // "N/A" is not a band
+    const n = parseFloat(m[0]);
+    return n >= 95 ? '95% and above'
+         : n >= 90 ? '90–95%'
+         : n >= 85 ? '85–90%'
+         : 'below 85%';
+  },
+};
+const BUCKET_ORDER = Object.assign({
+  'Efficiency': ['95% and above', '90–95%', '85–90%', 'below 85%'],
+}, GM.facetOrder || {});     // data-driven orders (e.g. the DIN Rail Type groups)
+const bucketOf = (k, v) => {
+  if (!FACET_BUCKET[k]) return v;
+  if (v === '' || v == null) return '';
+  const b = FACET_BUCKET[k](v);
+  return b == null ? '' : b;
+};
+function facetsFor(cat){
+  /* Only the products that can actually appear as rows. A nested accessory carries
+     values no profile has -- Diffuser Type, and its own Finish Colour -- so building
+     facets from every product in the tab offered chips that could never match a
+     visible row: picking one emptied the grid. */
+  const ps = D.products.filter(p => p._cats.includes(cat) && !ACC.of[p.sku]);
+  const skip = skipFor(cat);
+  const keys = new Map();
+  ps.forEach(p => {
+    ['Brand','Series'].forEach(k => { if (valOf(p,k) && !skip.has(k)) keys.set(k,(keys.get(k)||0)+1); });
+    Object.keys(p.a||{}).forEach(k => { if (!skip.has(k)) keys.set(k,(keys.get(k)||0)+1); });
+    Object.keys(p._extra||{}).forEach(k => { if (!skip.has(k)) keys.set(k,(keys.get(k)||0)+1); });
+  });
+  const out = [];
+  for (const [k,n] of keys){
+    if (n < Math.max(2, ps.length*0.15)) continue;      // too sparse to filter on
+    const vals = [...new Set(ps.map(p => bucketOf(k, valOf(p,k))).filter(v => v !== ''))];
+    if (vals.length < 2) continue;
+    const numeric = vals.every(v => num(v) !== null);
+    out.push({k, n, type: (numeric && vals.length > 6) ? 'range' : 'multi', vals});
+  }
+  /* Type first where it exists: it is the top-level split a buyer makes before any
+     spec ("I need a 3-phase one"), so it belongs above Brand rather than wherever
+     its product count happens to place it.
+
+     After that, the hand-picked facet lists in families.py win. Ranking purely by
+     how many products carry a field buried the useful ones: on LED Sign Module 17
+     fields tie at 24 products, so Beam Angle, CRI, Max Run and Rated Current all
+     fell past the cut while Length, Height and the raw min/max temperatures took
+     their places -- and those three are already covered by the Size and Operating
+     Temp columns. So a configured field is never dropped, and keeps the order the
+     config lists it in; fields merely derived from the data fill what room is left.
+     A tab spans up to 5 families but never more than 13 configured facets, so the
+     rail cannot run away. */
+  const cfg = [];
+  new Set(ps.map(p => p.family)).forEach(f => {
+    ((FAM[f] || {}).facets || []).forEach(x => { if (!cfg.includes(x.k)) cfg.push(x.k); });
+  });
+  const rank = k => k==='Type' ? -3 : k==='Brand' ? -2 : k==='Series' ? -1
+                  : cfg.includes(k) ? 0 : 1;
+  const ci = k => { const i = cfg.indexOf(k); return i < 0 ? 1e6 : i; };
+  out.sort((a,b) => rank(a.k) - rank(b.k) || ci(a.k) - ci(b.k) || b.n - a.n);
+  // 13, not 11: the configured list alone reaches 11 on LED Sign Module, and a
+  // floor of 11 would have paid for Max Run by dropping Lumens and Operating Temp.
+  // Only that tab and LED Strip have this many candidates, so no rail grows past 13.
+  return out.slice(0, Math.max(13, out.filter(f => rank(f.k) <= 0).length));
+}
+let FACETS = [];
+
+function passes(p, exceptKey){
+  for (const f of FACETS){
+    if (f.k === exceptKey) continue;
+    const fv = state.filters[f.k];
+    if (!fv) continue;
+    if (f.type === 'range'){
+      const n = num(valOf(p, f.k));
+      if (fv.min != null && (n == null || n < fv.min)) return false;
+      if (fv.max != null && (n == null || n > fv.max)) return false;
+    } else if (fv.size && !fv.has(bucketOf(f.k, valOf(p, f.k)))) return false;
+  }
+  if (state.search){
+    const q = state.search.toLowerCase();
+    if (!((p.sku||'') + ' ' + (p.series||'') + ' ' + (p.brand||'') + ' ' + (p.title||''))
+          .toLowerCase().includes(q)) return false;
+  }
+  return true;
+}
+
+/* Sort by the column's own type, not by whether an individual value happens to
+   parse as a number. Deciding per value made a SKU sort meaningless: num() reads
+   "SC-360-12" as -360 (it strips the letters and keeps the hyphen) while
+   "EV-SNL-100-12" comes back null, so half the rows sorted numerically on a
+   negative and half fell through to a string compare. */
+function filtered(){
+  // Accessories are not top-level rows: they hang off their profile instead.
+  const l = inCat().filter(p => passes(p, null) && !ACC.of[p.sku]);
+  const {k, dir} = state.sort;
+  const numeric = ALIGN[k] === 'num' || ALIGN[k] === 'price';
+  l.sort((a,b) => {
+    const va = valOf(a,k), vb = valOf(b,k);
+    if (numeric){
+      const na = num(va), nb = num(vb);
+      // Blanks sink to the bottom either way round: a screenful of "—" at the
+      // top of a descending sort is never what was wanted.
+      if (na == null) return nb == null ? 0 : 1;
+      if (nb == null) return -1;
+      return (na - nb) * dir;
+    }
+    // Natural order, so SC-100 precedes SC-360 rather than SC-1000.
+    return String(va).localeCompare(String(vb), undefined, {numeric:true, sensitivity:'base'}) * dir;
+  });
+  return l;
+}
+
+/* Columns shown in the grid: the category's most-populated fields, with SKU and
+   image pinned first. */
+function columnsFor(cat){
+  const ps = D.products.filter(p => p._cats.includes(cat) && !ACC.of[p.sku]);
+  const freq = new Map();
+  ps.forEach(p => {
+    Object.keys(p.a||{}).forEach(k => { if(!['Brand','Series'].includes(k)) freq.set(k,(freq.get(k)||0)+1); });
+    Object.keys(p._extra||{}).forEach(k => freq.set(k,(freq.get(k)||0)+1));
+  });
+  /* NOTE: this is the ONLY thing that decides the grid's columns. The per-family
+     `columns` list in families.py drives the PRINTED guide, not this table -- so a
+     column added or removed there has no effect here. Change both if a column is
+     meant to move in both places. */
+  const pri = ['Output Voltage','Voltage','Power Input','Power Rating','Power','Rated Current',
+               'Waterproof','IP','Dimming Control','Type','Operation Mode','lm/m','W/m','CRI',
+               'LED Density','Efficacy','Min Cut','Max Run','Lumens','Colour','Efficiency',
+               'Temp Range','Warranty Period','Package','Max Series (MOQ)'];
+  /* Two different intentions, applied at different points:
+
+     COL_SKIP is structural -- these are never columns anywhere (a filter-only
+     grouping, or a value the Size column already contains). Removed BEFORE
+     ranking, so they never occupy a slot.
+
+     CAT_COL_SKIP is "take this column off this tab". Removed AFTER the top-7 cut,
+     so removing a column does exactly that. Filtering it out earlier would free a
+     slot and promote the 8th-ranked field in its place -- which is how taking
+     Waterproof off DIN Rail silently added Height, and removing Height then added
+     Maximum Temperature. */
+  const ranked = [...freq.entries()]
+    .filter(([k,n]) => n >= ps.length*0.3 && !COL_SKIP.has(k))
+    .sort((a,b) => { const ia=pri.indexOf(a[0]), ib=pri.indexOf(b[0]);
+                     return (ia<0?99:ia)-(ib<0?99:ib) || b[1]-a[1]; })
+    .map(([k]) => k).slice(0,7)
+    .filter(k => !(CAT_COL_SKIP[cat] || []).includes(k));
+  // SKU leads because it is the pinned column, and price sits third rather than
+  // last: with 11 columns the grid scrolls sideways, and a price parked off the
+  // right-hand edge may as well not be there.
+  // Size is pinned last, so it must not also come through in `ranked` -- LED
+  // Extrusion was showing two Size columns.
+  const added = (CAT_COL_ADD[cat] || []).filter(k => !ranked.includes(k));
+  // Series and Size are pinned rather than ranked, so CAT_COL_SKIP has to be
+  // applied to them explicitly -- listing either in that config did nothing before.
+  const skip = CAT_COL_SKIP[cat] || [];
+  return [ '__sku','__img',
+           ...(skip.includes('__price') ? [] : ['__price']),
+           ...(skip.includes('Series') ? [] : ['Series']),
+           ...ranked.filter(k => k !== 'Size'), ...added,
+           ...(skip.includes('Size') ? [] : ['Size']) ];
+}
+let COLS = [];
+
+/* The extrusion tab mixes two kinds of product: the profiles, and the end caps and
+   brackets that fit them. Listed as peers they read as alternatives to a profile,
+   when in fact each one only fits particular profiles -- so every profile carries
+   its own accessories on a row you can expand.
+
+   The mapping is taken from the ACCESSORY'S OWN TITLE ("End cap ... -EXLP04",
+   "FIXING BRACKET ... - EXCR01/EXCR02"), not from the SKU code, because two of the
+   brackets fit two profiles each and no code rule expresses that. Where a title
+   names no profile the code is the fallback: FBCR03's title names itself, so it
+   would otherwise fit nothing. An accessory that still matches nothing stays a
+   normal row rather than disappearing. */
+const ACC_FAMILIES = new Set(['accessory_end_cap', 'accessory_mounting_bracket',
+                              'accessory_diffuser']);
+const ACC_KIND = { accessory_end_cap: 'end cap', accessory_mounting_bracket: 'bracket',
+                   accessory_diffuser: 'diffuser' };
+/* Both end caps for a profile sit on the same row group and differ by one letter
+   (ECLP03 / ECLP03H), so the label has to say which is which -- the SKU alone is
+   too easy to misread when ordering. */
+const accKind = p => {
+  const base = ACC_KIND[p.family] || 'accessory';
+  if (p.family !== 'accessory_end_cap') return base;
+  return /with\s*hole/i.test(String(p.title || '')) ? 'end cap · hole' : 'end cap · no hole';
+};
+let ACC = { map: {}, of: {} };
+function accessoriesFor(cat){
+  const ps = D.products.filter(p => p._cats.includes(cat));
+  const parents = ps.filter(p => !ACC_FAMILIES.has(p.family));
+  const stem = sku => sku.replace(/-\d+$/, '').toUpperCase();   // EXLP03-3 -> EXLP03
+  const map = {}, of = {};
+  ps.filter(p => ACC_FAMILIES.has(p.family)).forEach(acc => {
+    let named = (String(acc.title || '').match(/EX[A-Z]{2}\d+/gi) || []).map(x => x.toUpperCase());
+    if (!named.length){
+      const m = acc.sku.match(/^(?:EC|FB)(.+)$/i);
+      if (m) named = ['EX' + m[1].toUpperCase()];
+    }
+    const targets = [];
+    named.forEach(n => parents.forEach(p => {
+      if (stem(p.sku) === n && !targets.includes(p.sku)) targets.push(p.sku);
+    }));
+    if (!targets.length) return;
+    of[acc.sku] = targets;
+    targets.forEach(t => (map[t] = map[t] || []).push(acc.sku));
+  });
+  return { map, of };
+}
+
+/* Alignment is a property of the column, not of the individual value. Deciding
+   it per cell -- which is what `num(v)` per row amounted to -- right-aligns 24
+   and left-aligns the "—" and the IP67 in the same column, so neither the
+   figures nor the header line up with anything. */
+function alignFor(cat, cols){
+  const ps = D.products.filter(p => p._cats.includes(cat));
+  const al = {};
+  cols.forEach(k => {
+    if (k === '__price'){ al[k] = 'price'; return; }
+    if (k === '__sku' || k === '__img'){ al[k] = ''; return; }
+    const vals = ps.map(p => valOf(p,k)).filter(v => v !== '');
+    al[k] = vals.length && vals.filter(v => num(v) !== null).length >= vals.length*0.7 ? 'num' : '';
+  });
+  return al;
+}
+let ALIGN = {};
+
+/* Units come from the hand-tuned per-family `unit` in families.py, shipped in
+   catalogue.js -- the same source guide.html uses, so the grid and the printed
+   guide can never disagree about what a column is measured in. They are shown
+   once in the header rather than repeated on every row, which also keeps the
+   values bare numbers for sorting and range filtering.
+   A category spans several families (LED Driver covers 9): if they disagreed on
+   a unit, showing either would be a guess, so show none. In practice they do not
+   -- Rated Current is 'A' in all 18 families that declare it. */
+const UNIT_OK = new Set(['V','W','A','mm','yr','lm','K','°C','mA','kg']);
+function unitsFor(cat){
+  const seen = {};
+  new Set(D.products.filter(p => p._cats.includes(cat)).map(p => p.family)).forEach(f => {
+    const cfg = FAM[f]; if (!cfg) return;
+    (cfg.facets||[]).concat(cfg.columns||[]).forEach(x => {
+      if (!x.unit || !UNIT_OK.has(x.unit)) return;
+      (seen[x.k] = seen[x.k] || new Set()).add(x.unit);
+    });
+  });
+  const out = {};
+  Object.entries(seen).forEach(([k, s]) => { if (s.size === 1) out[k] = [...s][0]; });
+  // Dimensions are stored in millimetres throughout; families.py does not
+  // declare a unit for the synthetic columns because they are not attributes.
+  out['Size'] = out['Profile'] = 'mm';
+  return out;
+}
+let UNITS = {};
+/* A few PIM attribute labels are too long to read as a chip header or a column
+   heading. This renames them for DISPLAY only -- the data key stays the PIM label,
+   so facets, filters, sorting and the exported guide are all untouched. */
+const DISPLAY_NAME = { 'Max Number in Series': 'Max Run (Number of Modules)',
+                       'Min Cut': 'Cutting Length' };
+/* Per-tab overrides: "Power Input" is the right name on a driver, where it means the
+   mains range, but a sign module is simply a 12V or 24V part and the printed guide
+   calls that column Voltage. */
+const CAT_DISPLAY_NAME = { 'LED Sign Module': { 'Power Input': 'Voltage' } };
+const dispName = k => (CAT_DISPLAY_NAME[state.cat] || {})[k] || DISPLAY_NAME[k] || k;
+// "Lumens (lm)" reads as a stutter, so a renamed field that already says its unit
+// drops the parenthetical.
+const withUnit = k => { const n = dispName(k), u = UNITS[k];
+  return n + (u && !n.toLowerCase().startsWith(u.toLowerCase()) ? ` (${u})` : ''); };
+
+/* ---------- render ---------- */
+function renderCats(){
+  document.getElementById('cats').innerHTML = CATS.map(c =>
+    `<div class="cat${c===state.cat?' on':''}" data-cat="${esc(c)}">${esc(c)}<b>${
+      D.products.filter(p=>p._cats.includes(c)).length}</b></div>`).join('');
+}
+
+function renderRail(){
+  let h = '';
+  for (const f of FACETS){
+    const open = state.open.has(f.k), fv = state.filters[f.k];
+    let sum = '';
+    if (f.type === 'range' && fv) sum = `${fv.min ?? 'min'}–${fv.max ?? 'max'}`;
+    // A short single value names itself; anything longer is counted, since the
+    // ticked chip right below already shows what it is.
+    else if (fv && fv.size) sum = fv.size === 1 && String([...fv][0]).length <= 12 ? [...fv][0] : String(fv.size);
+    h += `<div class="facet"><div class="fhd" data-t="${esc(f.k)}">
+            <span class="fcar">${open?'▾':'▸'}</span><span class="flabel">${esc(withUnit(f.k))}</span>
+            ${sum?`<span class="fsum" title="${esc(fv instanceof Set ? [...fv].join(', ') : sum)}">${esc(sum)}</span><span class="fclr" data-clr="${esc(f.k)}">✕</span>`:''}
+          </div>`;
+    if (open){
+      h += '<div class="fbody">';
+      if (f.type === 'range'){
+        const ns = f.vals.map(num).filter(v=>v!=null);
+        h += `<div class="range">
+                <input type="number" placeholder="${Math.min(...ns)}" data-rg="${esc(f.k)}" data-b="min" value="${fv&&fv.min!=null?fv.min:''}">
+                <span>to</span>
+                <input type="number" placeholder="${Math.max(...ns)}" data-rg="${esc(f.k)}" data-b="max" value="${fv&&fv.max!=null?fv.max:''}">
+                ${UNITS[f.k]?`<span class="runit">${esc(UNITS[f.k])}</span>`:''}
+              </div>`;
+      } else {
+        const counts = new Map();
+        inCat().filter(p => !ACC.of[p.sku] && passes(p, f.k)).forEach(p => {
+          const v = bucketOf(f.k, valOf(p, f.k)); if (v!=='') counts.set(v,(counts.get(v)||0)+1);
+        });
+        const order = BUCKET_ORDER[f.k];
+        const rankIn = v => { const i = order.indexOf(v); return i < 0 ? 1e6 : i; };
+        const vals = f.vals.slice().sort((a,b)=>{
+          if (order) return rankIn(a) - rankIn(b) || String(a).localeCompare(String(b));
+          const na=leadNum(a), nb=leadNum(b);
+          return (na!=null&&nb!=null&&na!==nb) ? na-nb
+               : String(a).localeCompare(String(b), undefined, {numeric:true});
+        });
+        /* The match count is deliberately not shown. It is computed against the
+           OTHER active filters, so it moved every time an unrelated facet
+           changed, and read as part of the value itself -- "5 133" looks like a
+           number, not "5 years, 133 products". The count still decides whether a
+           value is dimmed, which conveys "nothing here" without a digit. */
+        h += '<div class="chips">' + vals.map(v => {
+          const n = counts.get(v)||0, on = fv && fv.has(v);
+          return `<span class="chip${on?' on':''}${!n&&!on?' dim':''}" data-fk="${esc(f.k)}" data-v="${esc(v)}">${esc(v)}</span>`;
+        }).join('') + '</div>';
+      }
+      h += '</div>';
+    }
+    h += '</div>';
+  }
+  document.getElementById('rail').innerHTML = h;
+}
+
+function renderActive(){
+  const chips = [];
+  for (const f of FACETS){
+    const fv = state.filters[f.k];
+    if (!fv) continue;
+    if (f.type === 'range') chips.push({k:f.k, t:`${f.k} ${fv.min ?? ''}–${fv.max ?? ''}${
+      UNITS[f.k] ? ' ' + UNITS[f.k] : ''}`});
+    else [...fv].forEach(v => chips.push({k:f.k, v, t:v}));
+  }
+  document.getElementById('activef').innerHTML = chips.length
+    ? chips.map(c=>`<span class="fchip" data-rm="${esc(c.k)}" data-v="${esc(c.v||'')}">${esc(c.t)}<span class="x">✕</span></span>`).join('')
+      + '<span class="fchip clrall" data-clrall="1">Clear all</span>'
+    : `<span style="color:var(--muted);font-size:12px">No filters — all ${inCat().length} ${esc(state.cat)}</span>`;
+}
+
+function renderGrid(){
+  const list = filtered();
+  document.getElementById('count').textContent = `${list.length} shown · ${state.selected.size} selected`;
+  const groups = [];
+  const idx = {};
+  list.forEach(p => {
+    const key = (p.brand||'—') + ' ¦ ' + (p.series||'—');
+    if (!(key in idx)){ idx[key] = groups.length; groups.push({key, brand:p.brand, series:p.series, rows:[]}); }
+    groups[idx[key]].rows.push(p);
+  });
+
+  const cls = k => [ALIGN[k]||'', k==='__sku'?'c-sku':''].filter(Boolean).join(' ');
+  const label = k => k==='__img' ? '' : k==='__sku' ? 'SKU'
+                   : k==='__price' ? priceHeader() : withUnit(k);
+
+  let h = '<table><thead><tr>' +
+    COLS.map(k => {
+      const arrow = state.sort.k === k ? `<span class="sarr">${state.sort.dir>0?'▲':'▼'}</span>` : '';
+      // The photo column has nothing to sort on.
+      const sortable = k !== '__img';
+      return `<th class="${cls(k)}${sortable?'':' nosort'}"${sortable?` data-sort="${esc(k)}"`:''}>${
+        esc(label(k))}${arrow}</th>`;
+    }).join('') + '</tr></thead><tbody>';
+
+  groups.forEach(g => {
+    const allSel = g.rows.every(p => state.selected.has(p.sku));
+    h += `<tr class="grp" data-grp="${esc(g.key)}"><td colspan="${COLS.length}"><span class="gl">
+            <span class="ck${allSel?' on':''}"></span>${esc(g.brand||'—')} · ${esc(seriesShort(g.series)||'—')}
+            <span style="opacity:.6;font-weight:400">(${g.rows.length})</span></span></td></tr>`;
+    g.rows.forEach(p => {
+      const sel = state.selected.has(p.sku);
+      h += `<tr class="row${sel?' sel':''}" data-sku="${esc(p.sku)}">` +
+        COLS.map(k => {
+          if (k === '__img')   return `<td>${p.img?`<img loading="lazy" src="${esc(p.img)}" alt="">`:''}</td>`;
+          if (k === '__price'){ const v = tierPrice(p.sku);
+                                return `<td class="price">${v==null?'—':esc(money(v))}</td>`; }
+          if (k === '__sku'){
+            const kids = ACC.map[p.sku] || [];
+            const open = state.accOpen.has(p.sku);
+            return `<td class="c-sku"><span class="cell"><span class="ck${
+              sel?' on':''}"></span><span class="sku">${esc(p.sku)}</span>${
+              p.price?'':'<span class="warnpill">no price</span>'}${
+              kids.length?`<span class="acctog" data-acc="${esc(p.sku)}">${open?'▾':'▸'} ${
+                kids.length} ${kids.length===1?'accessory':'accessories'}</span>`:''}</span></td>`;
+          }
+          const v = valOf(p,k);
+          return `<td class="${cls(k)}${String(v).length > 24 ? ' long' : ''}">${esc(v===''?'—':v)}</td>`;
+        }).join('') + '</tr>';
+
+      // Accessory rows, indented under the profile they fit. They tick and export
+      // exactly like any other row -- they are simply not offered as alternatives
+      // to a profile.
+      if (state.accOpen.has(p.sku)){
+        (ACC.map[p.sku] || []).forEach(sku => {
+          const a = BY_SKU[sku]; if (!a) return;
+          const asel = state.selected.has(sku);
+          h += `<tr class="row accrow${asel?' sel':''}" data-sku="${esc(sku)}">` +
+            COLS.map(k => {
+              if (k === '__img')   return `<td>${a.img?`<img loading="lazy" src="${esc(a.img)}" alt="">`:''}</td>`;
+              if (k === '__price'){ const v = tierPrice(sku);
+                                    return `<td class="price">${v==null?'—':esc(money(v))}</td>`; }
+              if (k === '__sku')   return `<td class="c-sku"><span class="cell acckid"><span class="ck${
+                asel?' on':''}"></span><span class="sku">${esc(sku)}</span><span class="accwhat">${
+                esc(accKind(a))}</span></span></td>`;
+              const v = valOf(a,k);
+              return `<td class="${cls(k)}${String(v).length > 24 ? ' long' : ''}">${esc(v===''?'—':v)}</td>`;
+            }).join('') + '</tr>';
+        });
+      }
+    });
+  });
+  h += '</tbody></table>';
+  if (!list.length){
+    // Search runs inside the open tab. When it finds nothing here, say where the
+    // term does match, one click away, instead of a dead end.
+    const q = state.search.trim().toLowerCase();
+    const elsewhere = !q ? [] : CATS.filter(c => c !== state.cat).map(c => [c,
+      D.products.filter(p => p._cats.includes(c) && !ACC.of[p.sku]
+        && ((p.sku||'') + ' ' + (p.series||'') + ' ' + (p.brand||'') + ' ' + (p.title||'')).toLowerCase().includes(q)).length])
+      .filter(([, n]) => n);
+    h = elsewhere.length
+      ? `<div class="empty">No “${esc(state.search.trim())}” in ${esc(state.cat)}.<br>Found in: `
+        + elsewhere.map(([c, n]) => `<span class="jump" data-jump="${esc(c)}">${esc(c)} (${n})</span>`).join(' ')
+        + '</div>'
+      : '<div class="empty">Nothing matches these filters.</div>';
+  }
+  document.getElementById('grid').innerHTML = h;
+}
+
+function renderTray(){
+  const n = state.selected.size;
+  document.getElementById('tsub').textContent = n
+    ? `${n} product${n>1?'s':''} · ${state.sections.length} section${state.sections.length>1?'s':''}`
+    : 'Nothing selected';
+  ['genBtn','genTop'].forEach(id => document.getElementById(id).disabled = !n);
+  document.getElementById('genTop').textContent = `Generate guide · ${n}`;
+
+  if (!n){ document.getElementById('tlist').innerHTML =
+    '<div class="empty">Tick products on the left.<br>They land here, grouped into sections.</div>'; return; }
+
+  const bySec = new Map();
+  state.sections.forEach(s => bySec.set(s, []));
+  state.selected.forEach((v, sku) => {
+    if (!bySec.has(v.section)) bySec.set(v.section, []);
+    bySec.get(v.section).push(sku);
+  });
+
+  let h = '';
+  for (const [sec, skus] of bySec){
+    if (!skus.length) continue;
+    h += `<div class="tsec"><div class="sh">
+            <input value="${esc(sec)}" data-ren="${esc(sec)}">
+            <span class="del" data-delsec="${esc(sec)}" title="Remove section and its items">✕</span>
+          </div>`;
+    skus.forEach(sku => {
+      const p = BY_SKU[sku] || {};
+      h += `<div class="titem"><div class="info">
+              <div class="s">${esc(sku)}</div>
+              <div class="m">${esc(seriesSolo(p.series)||p.brand||'')}</div>
+            </div><span class="x" data-del="${esc(sku)}">✕</span></div>`;
+    });
+    h += '</div>';
+  }
+  document.getElementById('tlist').innerHTML = h;
+}
+
+function renderAll(){ renderCats(); renderRail(); renderActive(); renderGrid(); renderTray(); }
+
+/* Every selection change ends in renderTray(), so persisting here catches them
+   all without touching the selection logic itself. */
+const _renderTrayCore = renderTray;
+renderTray = function(){ _renderTrayCore(); saveDraft(); };
+
+/* ---------- copying ----------
+   navigator.clipboard is unavailable or rejects on file:// in some browsers
+   (Safari treats every file:// document as its own opaque origin), so fall back
+   to the old execCommand path rather than failing silently. */
+function fallbackCopy(t){
+  const ta = document.createElement('textarea');
+  ta.value = t;
+  ta.setAttribute('readonly','');
+  ta.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch (err) { /* nothing else to try */ }
+  document.body.removeChild(ta);
+}
+function copyText(t){
+  if (navigator.clipboard && navigator.clipboard.writeText)
+    navigator.clipboard.writeText(t).catch(() => fallbackCopy(t));
+  else fallbackCopy(t);
+}
+function flash(el, cls){
+  el.classList.add(cls);
+  setTimeout(() => el.classList.remove(cls), 700);
+}
+
+/* ---------- selection ---------- */
+// The live sheets' extraction also recorded rows that are not section headings:
+// a '*' note line ("*ELG and HLG 0-10V dimming type B available...") and the sheet's
+// own title ("Wellforces LED Strips Comparison Form"). Neither can head a section.
+const notSectionHeading = s => /^\s*\*/.test(s) || /comparison form\s*$/i.test(s);
+function defaultSection(p){
+  // Prefer the section this SKU sat in previously, so a rebuilt guide starts
+  // looking like the one it replaces.
+  const s = (p._secs || []).find(x => x && !notSectionHeading(x));
+  return s || state.cat;
+}
+function addSku(sku){
+  const p = BY_SKU[sku]; if (!p) return;
+  const sec = defaultSection(p);
+  if (!state.sections.includes(sec)) state.sections.push(sec);
+  state.selected.set(sku, {section: sec});
+}
+function toggle(sku){
+  if (state.selected.has(sku)) state.selected.delete(sku); else addSku(sku);
+  pruneSections();
+}
+function pruneSections(){
+  const used = new Set([...state.selected.values()].map(v => v.section));
+  state.sections = state.sections.filter(s => used.has(s));
+}
+
+function setCat(c){
+  state.cat = c; state.filters = {}; state.search = '';
+  document.getElementById('search').value = '';
+  ACC = accessoriesFor(c);
+  FACETS = facetsFor(c); COLS = columnsFor(c); ALIGN = alignFor(c, COLS); UNITS = unitsFor(c);
+  state.open = new Set(FACETS.slice(0,4).map(f=>f.k));
+  state.sort = {k:'__sku', dir:1};
+  renderAll();
+}
+
+/* The public build ships no prices.js, so there is nothing to choose between --
+   hide the control rather than offer a dropdown with one entry in it. */
+function initTier(){
+  const wrap = document.getElementById('tierwrap'), sel = document.getElementById('tierSel');
+  if (TIERS.length < 2){ wrap.style.display = 'none'; return; }
+  sel.innerHTML = TIERS.map(([v,l]) =>
+    `<option value="${esc(v)}"${v===state.tier?' selected':''}>${esc(l)}</option>`).join('');
+  sel.onchange = e => {
+    state.tier = e.target.value;
+    try { localStorage.setItem('WF_SEL_TIER', state.tier); } catch (err) { /* opaque origin */ }
+    renderGrid();
+  };
+}
+
+/* ---------- events ---------- */
+document.getElementById('cats').onclick = e => {
+  const t = e.target.closest('[data-cat]'); if (t) setCat(t.dataset.cat);
+};
+document.getElementById('rail').onclick = e => {
+  const hd = e.target.closest('.fhd'), chip = e.target.closest('[data-fk]'),
+        clr = e.target.closest('[data-clr]');
+  if (clr){ delete state.filters[clr.dataset.clr]; renderAll(); e.stopPropagation(); return; }
+  if (chip){
+    const k = chip.dataset.fk, v = chip.dataset.v;
+    const s = state.filters[k] instanceof Set ? state.filters[k] : new Set();
+    s.has(v) ? s.delete(v) : s.add(v);
+    if (s.size) state.filters[k] = s; else delete state.filters[k];
+    renderAll(); return;
+  }
+  if (hd){
+    const k = hd.dataset.t;
+    state.open.has(k) ? state.open.delete(k) : state.open.add(k);
+    renderRail(); return;
+  }
+};
+document.getElementById('rail').addEventListener('input', e => {
+  const rg = e.target.closest('[data-rg]'); if (!rg) return;
+  const k = rg.dataset.rg, b = rg.dataset.b;
+  const cur = (state.filters[k] && !(state.filters[k] instanceof Set)) ? state.filters[k] : {};
+  const v = rg.value === '' ? null : +rg.value;
+  cur[b] = v;
+  if (cur.min == null && cur.max == null) delete state.filters[k]; else state.filters[k] = cur;
+  renderGrid(); renderActive();
+});
+document.getElementById('activef').onclick = e => {
+  const rm = e.target.closest('[data-rm]');
+  if (e.target.closest('[data-clrall]')){ state.filters = {}; renderAll(); return; }
+  if (rm){
+    const k = rm.dataset.rm, v = rm.dataset.v;
+    if (v && state.filters[k] instanceof Set){ state.filters[k].delete(v); if(!state.filters[k].size) delete state.filters[k]; }
+    else delete state.filters[k];
+    renderAll();
+  }
+};
+document.getElementById('grid').onclick = e => {
+  const jump = e.target.closest('[data-jump]');
+  if (jump){
+    // Switch tab but keep what was typed in the search box.
+    const q = document.getElementById('search').value;
+    setCat(jump.dataset.jump);
+    document.getElementById('search').value = q;
+    document.getElementById('search').dispatchEvent(new Event('input'));
+    return;
+  }
+  const th = e.target.closest('[data-sort]');
+  if (th){
+    const k = th.dataset.sort;
+    state.sort = {k, dir: state.sort.k === k ? -state.sort.dir : 1};
+    renderGrid(); return;
+  }
+  /* A drag that left text selected is a copy gesture, not a tick. A plain click
+     collapses any prior selection on mousedown, so by the time the click lands
+     this is only non-empty when the user actually dragged across the row. */
+  if (String(window.getSelection() || '').length) return;
+  /* Clicking the code copies it and never ticks the row -- ticking used to be
+     the only thing a click could do, which made the SKU impossible to get at. */
+  const skuEl = e.target.closest('.sku');
+  if (skuEl){ copyText(skuEl.textContent); flash(skuEl, 'copied'); return; }
+  // Expanding a profile's accessories must not also tick the profile.
+  const tog = e.target.closest('[data-acc]');
+  if (tog){
+    const k = tog.dataset.acc;
+    state.accOpen.has(k) ? state.accOpen.delete(k) : state.accOpen.add(k);
+    renderGrid(); return;
+  }
+  const grp = e.target.closest('[data-grp]');
+  if (grp){
+    const rows = filtered().filter(p => ((p.brand||'—')+' ¦ '+(p.series||'—')) === grp.dataset.grp);
+    const all = rows.every(p => state.selected.has(p.sku));
+    rows.forEach(p => all ? state.selected.delete(p.sku) : addSku(p.sku));
+    pruneSections(); renderGrid(); renderTray(); return;
+  }
+  const row = e.target.closest('[data-sku]');
+  if (row){ toggle(row.dataset.sku); renderGrid(); renderTray(); }
+};
+document.getElementById('search').oninput = e => {
+  state.search = e.target.value;
+  /* An accessory is not a top-level row, so searching for one would otherwise
+     return nothing. Open the profiles that hold a match instead. */
+  const q = state.search.trim().toLowerCase();
+  if (q) Object.entries(ACC.of).forEach(([sku, parents]) => {
+    const a = BY_SKU[sku]; if (!a) return;
+    if (((a.sku||'') + ' ' + (a.title||'')).toLowerCase().includes(q))
+      parents.forEach(t => state.accOpen.add(t));
+  });
+  renderGrid(); renderRail();
+};
+document.getElementById('selAll').onclick = () => {
+  filtered().forEach(p => addSku(p.sku)); renderGrid(); renderTray();
+};
+document.getElementById('clearSel').onclick = () => {
+  state.selected.clear(); state.sections = []; renderGrid(); renderTray();
+};
+/* Whatever is ticked, or else everything the filters left on screen -- one per
+   line, which is what a DEAR / spreadsheet paste wants. */
+document.getElementById('copySkus').onclick = e => {
+  const skus = state.selected.size ? [...state.selected.keys()] : filtered().map(p => p.sku);
+  if (!skus.length) return;
+  copyText(skus.join('\n'));
+  const el = e.currentTarget, was = el.textContent;
+  el.textContent = `Copied ${skus.length}`;
+  setTimeout(() => { el.textContent = was; }, 900);
+};
+document.getElementById('autoSec').onclick = () => {
+  state.sections = [];
+  [...state.selected.keys()].forEach(sku => {
+    const sec = defaultSection(BY_SKU[sku]);
+    if (!state.sections.includes(sec)) state.sections.push(sec);
+    state.selected.set(sku, {section: sec});
+  });
+  renderTray();
+};
+document.getElementById('tlist').addEventListener('change', e => {
+  const ren = e.target.closest('[data-ren]'); if (!ren) return;
+  const from = ren.dataset.ren, to = ren.value.trim() || from;
+  if (to === from) return;
+  state.sections = state.sections.map(s => s === from ? to : s);
+  state.selected.forEach(v => { if (v.section === from) v.section = to; });
+  renderTray();
+});
+document.getElementById('tlist').onclick = e => {
+  const s = e.target.closest('.s');
+  if (s){ copyText(s.textContent.trim()); flash(s, 'copied'); return; }
+  const del = e.target.closest('[data-del]'), ds = e.target.closest('[data-delsec]');
+  if (del){ state.selected.delete(del.dataset.del); pruneSections(); renderGrid(); renderTray(); return; }
+  if (ds){
+    const sec = ds.dataset.delsec;
+    [...state.selected.entries()].forEach(([k,v]) => { if (v.section === sec) state.selected.delete(k); });
+    pruneSections(); renderGrid(); renderTray();
+  }
+};
+
+/* ---------- handoff ---------- */
+/* The guide is passed to the viewer through localStorage rather than the URL:
+   a 100-SKU selection blows past URL length limits, and both pages are same
+   origin even under file://. */
+function generate(){
+  if (!state.selected.size) return;
+  const bySec = new Map();
+  state.sections.forEach(s => bySec.set(s, []));
+  state.selected.forEach((v, sku) => {
+    if (!bySec.has(v.section)) bySec.set(v.section, []);
+    bySec.get(v.section).push(sku);
+  });
+  // Print order, which is not grid order: photo first, price and datasheet last.
+  const cols = ['__img','__sku', ...COLS.filter(k => !['__img','__sku','__price'].includes(k)),
+                '__price','__spec'];
+  const guide = {
+    slug: 'custom',
+    title: document.getElementById('gtitle').value.trim() || 'Selection Guide',
+    intro: '',
+    contact: 'contact@wellforces.co.nz · wellforces.co.nz',
+    priceNote: 'Prices are exclusive of GST.',
+    footnotes: [],
+    defaultColumns: cols,
+    sections: [...bySec].filter(([,v]) => v.length)
+                        .map(([heading, skus]) => ({heading, columns: cols, skus})),
+    notes: {},
+  };
+  const json = JSON.stringify(guide);
+  // Two channels on purpose. localStorage is the nice one, but Safari gives every
+  // file:// document its own opaque origin, so a saved selection would silently
+  // vanish on the hop to the viewer. The hash always works because it travels
+  // with the navigation; the viewer prefers it and falls back to storage.
+  let stored = false;
+  try { localStorage.setItem('WF_CUSTOM_GUIDE', json); stored = true; } catch (err) { /* opaque origin */ }
+  const hash = '#g=' + encodeURIComponent(json);
+  if (!stored && hash.length > 1.8e6) {
+    alert('This selection is too large to pass to the viewer in this browser. '
+        + 'Try Chrome, or split it into two guides.');
+    return;
+  }
+  // Every generated guide is also a natural checkpoint for the history list.
+  pushHistory(guide);
+  // Carry the tier over so the guide opens on the price that was on screen
+  // rather than defaulting back to retail.
+  location.href = 'guide.html?guide=custom&tier=' + encodeURIComponent(state.tier) + hash;
+}
+document.getElementById('genBtn').onclick = generate;
+document.getElementById('genTop').onclick = generate;
+
+/* ---------- draft + history (additive) ----------
+   Two localStorage slots, both optional-by-design: on Safari file:// every
+   document has an opaque origin and storage throws, so every access is wrapped
+   and the features quietly disappear there (same policy as WF_SEL_TIER above).
+
+   WF_SEL_DRAFT     the live selection, saved on every change and restored on
+                    load, so a closed or refreshed tab does not lose the ticks.
+   WF_SEL_HISTORY   one entry per Generate guide, newest first, capped -- click
+                    an entry to put that guide's ticks and title back. Restoring
+                    only rebuilds state.selected/state.sections with the same
+                    shapes the selection code already uses; it never re-derives
+                    sections, so a restored guide looks exactly like it did. */
+const HIST_MAX = 15;
+
+function saveDraft(){
+  try {
+    localStorage.setItem('WF_SEL_DRAFT', JSON.stringify({
+      title: document.getElementById('gtitle').value,
+      sections: state.sections,
+      sel: [...state.selected.entries()].map(([sku, v]) => [sku, v.section]),
+    }));
+  } catch (err) { /* opaque origin */ }
+}
+
+function applySelection(title, sections, sel){
+  state.selected.clear();
+  sel.forEach(([sku, section]) => {
+    if (BY_SKU[sku]) state.selected.set(sku, {section});
+  });
+  const used = new Set([...state.selected.values()].map(v => v.section));
+  state.sections = (sections || []).filter(s => used.has(s));
+  // A section that arrived without its heading listed (old entry) still shows.
+  used.forEach(s => { if (!state.sections.includes(s)) state.sections.push(s); });
+  if (title) document.getElementById('gtitle').value = title;
+  return state.selected.size;
+}
+
+function restoreDraft(){
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem('WF_SEL_DRAFT')); } catch (err) { /* opaque origin */ }
+  if (d && Array.isArray(d.sel) && d.sel.length)
+    applySelection(d.title, d.sections, d.sel);
+}
+
+function histRead(){
+  try { return JSON.parse(localStorage.getItem('WF_SEL_HISTORY')) || []; }
+  catch (err) { return []; }
+}
+function pushHistory(guide){
+  const entry = {
+    title: guide.title,
+    date: new Date().toISOString(),
+    tier: state.tier,
+    sections: guide.sections.map(s => ({heading: s.heading, skus: s.skus})),
+  };
+  try {
+    localStorage.setItem('WF_SEL_HISTORY',
+      JSON.stringify([entry, ...histRead()].slice(0, HIST_MAX)));
+  } catch (err) { /* opaque origin */ }
+}
+
+function renderHistory(){
+  const h = histRead();
+  const host = document.getElementById('hlist');
+  if (!h.length){ host.innerHTML = '<div class="hempty">No guides generated yet.<br>Each Generate guide lands here.</div>'; return; }
+  host.innerHTML = h.map((e, i) => {
+    const n = e.sections.reduce((a, s) => a + s.skus.length, 0);
+    const d = new Date(e.date).toLocaleString('en-NZ',
+      {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+    return `<div class="hitem" data-hist="${i}">
+              <div class="ht">${esc(e.title)}</div>
+              <div class="hm">${esc(d)} · ${n} product${n>1?'s':''} · ${esc(e.tier)}</div>
+            </div>`;
+  }).join('');
+}
+
+document.getElementById('histBtn').onclick = () => {
+  const p = document.getElementById('hpanel');
+  if (!p.classList.contains('open')) renderHistory();
+  p.classList.toggle('open');
+};
+document.addEventListener('click', e => {
+  const p = document.getElementById('hpanel');
+  if (p.classList.contains('open')
+      && !p.contains(e.target) && e.target.id !== 'histBtn')
+    p.classList.remove('open');
+});
+document.getElementById('histClr').onclick = () => {
+  if (!confirm('Clear the guide history?')) return;
+  try { localStorage.removeItem('WF_SEL_HISTORY'); } catch (err) { /* opaque origin */ }
+  renderHistory();
+};
+document.getElementById('hlist').onclick = e => {
+  const it = e.target.closest('[data-hist]');
+  if (!it) return;
+  const entry = histRead()[+it.dataset.hist];
+  if (!entry) return;
+  if (state.selected.size
+      && !confirm('Replace the current selection with "' + entry.title + '"?')) return;
+  const sel = [];
+  entry.sections.forEach(s => s.skus.forEach(sku => sel.push([sku, s.heading])));
+  const got = applySelection(entry.title, entry.sections.map(s => s.heading), sel);
+  document.getElementById('hpanel').classList.remove('open');
+  renderGrid(); renderTray();
+  if (got < sel.length)
+    alert((sel.length - got) + ' SKU(s) from that guide are no longer in the catalogue and were skipped.');
+};
+// The title is part of the draft, so edits to it persist too.
+document.getElementById('gtitle').addEventListener('input', saveDraft);
+
+restoreDraft();
+initTier();
+setCat(state.cat);
+
+// Wrap long spec text, on unless switched off; remembered per browser.
+let wrapOn = true;
+try { wrapOn = localStorage.getItem('WF_WRAP') !== 'off'; } catch (e) {}
+document.body.classList.toggle('wraptext', wrapOn);
+document.getElementById('wrapTog').onclick = () => {
+  wrapOn = !wrapOn;
+  document.body.classList.toggle('wraptext', wrapOn);
+  try { localStorage.setItem('WF_WRAP', wrapOn ? 'on' : 'off'); } catch (e) {}
+};
+
+// Light / dark switch, remembered per browser (shared with the guide page).
+const themeBtn = document.getElementById('themeBtn');
+const showTheme = () => {
+  themeBtn.textContent = document.documentElement.dataset.theme === 'dark' ? '\u2600' : '\u263E';
+};
+themeBtn.onclick = () => {
+  const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem('WF_THEME', t); } catch (e) {}
+  showTheme();
+};
+showTheme();
+</script>
+</body>
+</html>

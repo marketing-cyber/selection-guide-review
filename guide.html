@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.png">
+<title>Wellforces Selection Guide</title>
+<script>
+/* Theme before first paint: the saved choice, else the system's. */
+(function(){ var t; try { t = localStorage.getItem('WF_THEME'); } catch (e) {}
+  if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.dataset.theme = t; })();
+</script>
+<style>
+  /* Screen UI (toolbar, notices, page background) follows the light/dark theme
+     shared with the selector. The A4 sheets keep their own print colours. */
+  :root{--hd:linear-gradient(100deg,#0B4A8A 0%,#2F72BE 60%,#58B2E6 100%);--bg:#E9EDF2;--surface:#fff;--surface-2:#F7F9FB;--line:#DCE1E8;--line-2:#EFF2F5;
+        --ink:#1B2430;--muted:#667284;--faint:#8A94A3;
+        --accent:#0B5394;--accent-ink:#0B5394;--accent-soft:#EAF2FB;--accent-line:#B9D3EE;
+        --hover:#F6F8FB;--chip-line:#DCE1E8;--input:#EFF2F6;--btn:#0B5394;--btn-ink:#fff;
+        --warn-bg:#FFF6E5;--warn-ink:#7A4A00;--warn-line:#F3D9A4;--sheet-shadow:0 6px 24px rgba(15,29,48,.12);
+        --royal:var(--accent)}
+  html[data-theme="dark"]{--hd:linear-gradient(100deg,#0A2747 0%,#123E6B 60%,#1B5A8F 100%);--bg:#0B1118;--surface:#151E28;--surface-2:#1A2531;--line:#263445;--line-2:#1D2834;
+        --ink:#DAE1E8;--muted:#93A0AE;--faint:#6E7B89;
+        --accent:#3D85C6;--accent-ink:#7DB3E8;--accent-soft:#16304A;--accent-line:#2C5680;
+        --hover:#1A2531;--chip-line:#2B3949;--input:#1B2632;--btn:#3D85C6;--btn-ink:#fff;
+        --warn-bg:#2E2416;--warn-ink:#F2C98A;--warn-line:#4A3820;--sheet-shadow:0 6px 30px rgba(0,0,0,.55);color-scheme:dark}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Inter,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);
+       font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+
+  /* ---- toolbar (screen only) ---- */
+  .bar{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line);
+       box-shadow:0 1px 3px rgba(16,24,40,.06)}
+  .bar-top,.bar-opts{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 18px}
+  /* Top row is the blue gradient header shared with the selector. */
+  .bar-top{background:var(--hd);color:#fff}
+  .bar-opts{background:var(--surface-2);border-top:1px solid var(--line-2);padding:8px 18px;gap:8px;justify-content:flex-start}
+  .bar .brand{display:flex;align-items:center;gap:12px;margin-right:6px;white-space:nowrap;text-decoration:none}
+  .bar .brand:hover{opacity:.85}
+  .bar .brand img{height:24px;width:auto;display:block}
+  .bar .brand .lc{display:none}
+  .bar .brand span{color:rgba(255,255,255,.75);font-size:12.5px;font-weight:600;padding-left:12px;border-left:1px solid rgba(255,255,255,.3)}
+  .bar .bar-top select,.bar .bar-top #titleInp{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.22);color:#fff}
+  .bar .bar-top select option{color:#222}
+  .bar .bar-top #titleInp:focus{background:rgba(255,255,255,.24);border-color:rgba(255,255,255,.55)}
+  .bar .bar-top .ttl::after{color:rgba(255,255,255,.7)}
+  .bar .bar-top .stat{color:rgba(255,255,255,.8)}
+  .bar .bar-top .btn{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.28)}
+  .bar .bar-top .btn:hover{background:rgba(255,255,255,.24)}
+  .bar .bar-top .btn.primary{background:#fff;color:#0B5394;border-color:#fff}
+  .bar label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .bar select{background:var(--surface);border:1px solid var(--chip-line);color:var(--ink);
+              border-radius:8px;padding:5px 8px;font-size:12px;cursor:pointer;font-family:inherit}
+  .bar select:hover{border-color:var(--accent-line)}
+  .bar select#guideSel{max-width:260px}
+  .bar input{background:var(--surface);border:1px solid var(--chip-line);color:var(--ink);
+             border-radius:99px;padding:5px 11px;font-size:12px;width:130px;font-family:inherit;outline:none}
+  .bar input:focus{border-color:var(--accent-line)}
+  .bar input::placeholder{color:var(--faint)}
+  .bar input:disabled,.bar select:disabled,.chip:disabled{opacity:.45;cursor:not-allowed}
+  .bar [hidden]{display:none !important}
+  .bar .grp{display:inline-flex;align-items:center;gap:6px;margin-right:8px}
+  .useg{display:inline-flex;border:1px solid var(--chip-line);border-radius:8px;overflow:hidden;background:var(--surface)}
+  .useg span{padding:4px 10px;font-size:11.5px;cursor:pointer;font-weight:600;color:var(--muted)}
+  .useg span.on{background:var(--accent-soft);color:var(--accent-ink)}
+  /* One-click switches with a visible checkbox: empty when off, ticked when on. */
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--chip-line);
+        color:var(--muted);border-radius:99px;padding:4px 11px 4px 8px;font-size:11.5px;font-weight:600;
+        cursor:pointer;font-family:inherit}
+  .chip::before{content:"";width:12px;height:12px;border:1.5px solid var(--chip-line);border-radius:3px;
+        box-sizing:border-box;font-size:9px;line-height:9px;text-align:center;font-weight:900;background:var(--surface)}
+  .chip.on{background:var(--accent-soft);color:var(--accent-ink);border-color:var(--accent-line)}
+  .chip.on::before{content:"\2713";background:var(--btn);border-color:var(--btn);color:#fff}
+  .chip:hover{border-color:var(--accent-line)}
+  .chip .chipnote{font-weight:500;opacity:.75}
+  /* Sales rep switch and its name field read as one control. */
+  .joined{display:inline-flex;align-items:stretch}
+  .joined .chip{border-radius:99px 0 0 99px}
+  .joined input,.bar .joined select{border-radius:0 99px 99px 0;border-left:none;margin:0}
+  .joined .chiplbl{display:inline-flex;align-items:center;padding:0 12px;font-size:12px;color:var(--muted);
+       border:1px solid var(--chip-line);border-left:none;border-radius:0 99px 99px 0;background:var(--surface)}
+  /* Editable guide title beside the guide picker. */
+  .bar .ttl{position:relative;display:inline-flex}
+  .bar .ttl::after{content:"\270E";position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--faint);pointer-events:none}
+  .bar #titleInp{width:min(340px,26vw);font-size:13px;font-weight:600;padding:7px 28px 7px 12px;border-radius:8px;
+                 background:var(--input);border-color:transparent}
+  .bar #titleInp:focus{border-color:var(--accent-line);background:var(--surface)}
+  .bar .stat{font-size:11.5px;color:var(--muted);margin-right:4px}
+  @media (max-width:1150px){ .bar .stat{display:none} }
+  .btn{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 14px;
+       font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;font-family:inherit;display:inline-flex;align-items:center}
+  .btn:hover{background:var(--hover)}
+  .btn.primary{background:var(--btn);color:var(--btn-ink);border-color:var(--btn);font-weight:700}
+  .btn.primary:hover{filter:brightness(1.08)}
+  .btn.themebtn{width:36px;height:36px;padding:0;justify-content:center;font-size:15px}
+  .warn{background:var(--warn-bg);color:var(--warn-ink);border-bottom:1px solid var(--warn-line);padding:8px 18px 8px 42px;font-size:12px;
+        line-height:1.6;position:relative}
+  .warn::before{content:"!";position:absolute;left:18px;top:9px;width:15px;height:15px;border-radius:50%;
+        background:#E8A33B;color:#fff;font-size:10.5px;font-weight:700;text-align:center;line-height:15px}
+  .warn details summary{cursor:pointer;list-style:none}
+  .warn details summary::-webkit-details-marker{display:none}
+  .warn .more{text-decoration:underline;opacity:.75;margin-left:4px;font-size:11.5px}
+  .warn details[open] .more{display:none}
+  .sheetwrap{display:flex;flex-direction:column;align-items:center;gap:22px;padding:24px 18px}
+
+  /* ---- A4 sheet ----
+     The sheet is drawn at true A4 size (mm) on screen too, so what you see is
+     what prints. Two looks share one markup: Classic (body.sty-a) and the plain
+     black-and-white Text only (body.sty-t, no photo column). Arial, the issuing brand's gradient bands,
+     and a merged Brand column carrying the supplier logo. */
+  :root{--wf-royal:#0B5394;--wf-mid:#3D85C6;--wf-grey:#F3F3F3;--wf-ink:#222;--wf-sub:#58585A;--hair:#D9D9D9;
+        --sans:Arial,"Helvetica Neue",Helvetica,sans-serif;--padx:8mm}
+  .a4{width:210mm;height:297mm;background:#fff;box-shadow:var(--sheet-shadow);
+      padding:6mm var(--padx) 0;display:flex;flex-direction:column;position:relative;overflow:hidden;
+      font-family:var(--sans);color:var(--wf-ink);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* section palette, lifted from the existing guides: [band, row tint] */
+  .a4 .s0{--band:#93C47D;--tint:#E6F3E7} .a4 .s1{--band:#FFD966;--tint:#FFF2CC}
+  .a4 .s2{--band:#EA9999;--tint:#F4CCCC} .a4 .s3{--band:#9FC5E8;--tint:#DCE9F5}
+  .a4 .s4{--band:#B4A7D6;--tint:#E8E3F4}
+  .a4 .wf,.a4 .wf-w{display:block;width:auto}
+  .a4 .wf-w{display:none}
+  .a4 .tbox{flex:1;min-height:0;overflow:hidden}
+  .a4 table{width:100%;border-collapse:collapse}
+  /* Wide tables (many columns) step down in type and padding until they fit the
+     sheet's width, instead of the right-hand columns being cut off (fitWidth). */
+  .a4.d1 thead th{font-size:8.5px !important;padding-left:4px !important;padding-right:4px !important;letter-spacing:0 !important}
+  .a4.d1 tbody td{font-size:9px !important;padding-left:4px !important;padding-right:4px !important}
+  .a4.d2 thead th{font-size:7.8px !important;padding-left:3px !important;padding-right:3px !important;letter-spacing:0 !important}
+  .a4.d2 tbody td{font-size:8.2px !important;padding-left:3px !important;padding-right:3px !important}
+  .a4.d2 td img{width:38px !important;height:24px !important}
+  .a4.d3 thead th{font-size:7.2px !important;padding-left:2.5px !important;padding-right:2.5px !important;letter-spacing:0 !important}
+  .a4.d3 tbody td{font-size:7.6px !important;padding-left:2.5px !important;padding-right:2.5px !important}
+  .a4.d3 td img{width:32px !important;height:20px !important}
+  .a4.d3 thead th .hl{white-space:normal}
+  .a4.nw tbody td{white-space:nowrap}
+  .a4 thead th{font-size:9.5px;padding:5px 5px;text-align:left;font-weight:700;line-height:1.25;vertical-align:bottom}
+  .a4 tr.grp td{text-align:center;font-weight:700;font-size:10.5px;padding:4px 7px}
+  .a4 tbody td{font-size:10px;padding:3.5px 5px;text-align:left;line-height:1.3}
+  /* Text and specs read from the left; prices sit right so their figures line up.
+     The merged Brand cell stays centred on its logo. */
+  .a4 tbody td.bcell{text-align:left;white-space:nowrap}
+  .a4 thead th.price,.a4 tbody td.price{text-align:right}
+  .a4 tbody td.brand,.a4 thead th.brand{text-align:center}
+  .a4 tbody td.note{text-align:left}
+  .a4 tbody td.price{white-space:nowrap}
+  .a4 thead th .unit{text-transform:none}
+  .a4 thead th .hl{white-space:nowrap}
+  .a4 thead th.sn{width:15mm}
+  .sty-t thead th.sn{width:17mm}
+  .a4.d1 thead th.sn,.a4.d2 thead th.sn,.a4.d3 thead th.sn{width:auto}
+  .a4 a.skl,.a4 .ft-co a{color:inherit;text-decoration:none}
+  /* Offer / clearance markers that point a row at its footnote. */
+  .a4 .mk{color:#C0392B;font-weight:700}
+  .a4 .tag{display:inline-block;margin-left:4px;padding:1px 5px;border-radius:99px;background:#C0392B;color:#fff;
+           font-size:6.8px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;vertical-align:1px;line-height:1.3}
+  .a4 tbody td.brand{background:var(--wf-grey) !important;vertical-align:middle;padding:2px 3px;width:10mm}
+  .a4 td.brand img{height:auto !important;width:auto;max-width:8.5mm !important;max-height:5mm;object-fit:contain}
+  .a4 td.brand span{font-weight:700;font-size:8.5px;color:var(--wf-royal)}
+  .a4 td.brand.has-logo span{display:none}
+  .a4 td img{height:20px;width:auto;max-width:34px;object-fit:contain;vertical-align:middle}
+  /* Product photos and supplier logos are JPEGs on white; multiply drops the white
+     so they sit on the row tint instead of showing as white boxes. */
+  .a4 tbody td img{mix-blend-mode:multiply}
+  /* PIM photos carry a brand logo and model label in their top and bottom bands;
+     a wide frame crops to the product in the middle. */
+  .sty-a tbody td:not(.brand) img{width:48px;height:28px;max-width:none;object-fit:cover}
+  .a4 .lnk{color:var(--wf-mid);font-weight:700;text-decoration:underline}
+  .a4 .intro{font-size:9.5px;color:#444;line-height:1.55;margin:0 0 3mm;flex:none}
+  .a4 .cover,.a4 .runhd{flex:none}
+  .a4 .cv-top{display:flex;align-items:center;justify-content:space-between;gap:8mm}
+  .a4 .cv-partner{display:flex;align-items:center;gap:6px;font-size:8px;text-transform:uppercase;letter-spacing:.08em}
+  .a4 .cv-partner img{height:7mm;width:auto;background:#fff;border-radius:3px;padding:1mm 1.5mm}
+  .a4 .cv-meta i{font-style:normal}
+  .a4 .cv-eyebrow,.a4 .cv-kick,.a4 .cv-tag{display:none}
+  .a4 .runhd{display:flex;align-items:center;gap:5mm}
+  .a4 .runhd .rh-t{flex:1}
+  .a4 .ft{flex:none;margin-top:3mm}
+  .a4 .ft-notes{font-size:8.5px;color:#444;line-height:1.55;margin-bottom:2.5mm}
+  .a4 .ft-notes .tiernote{font-weight:700}
+  .a4 .ft-notes.rep{display:none}
+  .a4 .ft-inq{display:none}
+  .a4 .ft-bar{display:flex;justify-content:space-between;align-items:center;gap:6mm}
+  .a4 .ft-co{display:flex;flex-wrap:wrap;column-gap:4mm;row-gap:1mm;font-size:8.3px}
+  .a4 .ft-co b{font-weight:700}
+  .a4 .ft-site{display:none}
+  .a4 .cv-info,.a4 .ft-co .ic{display:none}
+  .a4 .ic svg{width:3.2mm;height:3.2mm;vertical-align:-.8mm}
+  .a4 .pageno{white-space:nowrap;font-size:8.5px}
+  .a4 .pageno .pn-w{display:inline}
+
+  /* ===== 1 · Classic -- the existing guides, tidied ===== */
+  /* Brand themes, picked by the Logo control: Wellforces blue, Archilight's
+     monochrome (archilight website design system), Power Supply Mall's slate
+     and red (powersupplymall.com colour schemes). */
+  body,body.th-wf{--hd-grad:linear-gradient(100deg,#0B4A8A 0%,#2F72BE 55%,#58B2E6 100%);--hd-soft:#cfe5f7;
+       --acc:#0B5394;--acc2:#2F72BE;--th-bg:#F1F6FB;--zebra:#F6F9FC;
+       --grp-grad:linear-gradient(90deg,rgba(47,114,190,0) 0%,#2F72BE 22%,#1D5FAF 50%,#58B2E6 78%,rgba(88,178,230,0) 100%)}
+  /* Archilight: the palette of archilight.nz -- light stone bands with dark
+     green-black type, bronze accents, warm off-white plates. No gradient, no circles;
+     the dark logo sits on the light band. */
+  body.th-al{--hd-grad:#E7E8E2;--hd-soft:#68715F;
+       --acc:#252823;--acc2:#887353;--th-bg:#fff;--zebra:#F8F8F5;--grp-grad:#F4F4F0}
+  body.th-al.sty-a .cover::before,body.th-al.sty-a .cover::after,body.th-al.sty-a .runhd::before,body.th-al.sty-a .ft-bar::before{display:none}
+  /* Header bands carry an Archilight interior (archilight.nz gallery image), darkened
+     on the left where the white logo and title sit; sand-gold labels and rule. */
+  body.th-al.sty-a .cover,body.th-al.sty-a .runhd{color:#fff;
+       background:linear-gradient(90deg,rgba(18,20,18,.82) 0%,rgba(18,20,18,.55) 55%,rgba(18,20,18,.25) 100%),
+                  url(logos/al-scene-dark.jpg) center 40%/cover}
+  body.th-al.sty-a .cover{border-bottom:2px solid #887353}
+  body.th-al.sty-a .runhd{background-position:center 40%;border-bottom:1.5px solid #887353}
+  body.th-al.sty-a .cv-info i{color:#E8C39E}
+  /* The right side of the photo is brighter: lift the small type off it. */
+  body.th-al.sty-a .cv-info,body.th-al.sty-a .runhd .rh-t{text-shadow:0 1px 3px rgba(0,0,0,.7)}
+  /* Footer band: the photo's dark tone, so the page is framed dark top and bottom. */
+  body.th-al.sty-a .ft-bar{background:linear-gradient(90deg,#141613 0%,#252823 60%,#33372F 100%);
+       color:#fff;border-top:1.5px solid #887353}
+  body.th-al.sty-a .pageno{color:#fff}
+  body.th-al.sty-a .ft-co .ic{color:#E8C39E}
+  body.th-al.sty-a h1{letter-spacing:.06em}
+  body.th-al.sty-a .cv-main::before{letter-spacing:.3em;color:#E8C39E}
+  body.th-al.sty-a thead th{color:#68715F;border-bottom:1.5px solid #887353;letter-spacing:.08em}
+  /* Section rows: a bronze-to-sand band fading out at both ends, like the Wellforces
+     blue bar but in Archilight's gold. */
+  body.th-al.sty-a tr.grp td{color:#fff;letter-spacing:.14em;font-size:9.5px;padding:6px 7px;border:none;
+       text-shadow:0 1px 1px rgba(60,45,25,.35);
+       background:linear-gradient(90deg,rgba(136,115,83,0) 0%,#A88B60 22%,#887353 50%,#C9A77C 78%,rgba(232,195,158,0) 100%) !important}
+  body.th-al.sty-a td.bcell{color:#252823}
+  body.th-al.sty-a .mk{color:#887353}
+  body.th-al.sty-a tbody td{border-bottom:1px solid #ECEDE7}
+  body.th-psm{--hd-grad:linear-gradient(100deg,#1E2328 0%,#2E3742 60%,#3F4A56 100%);--hd-soft:#C9D1DA;
+       --acc:#2E3A46;--acc2:#C13021;--th-bg:#F4F2EE;--zebra:#FAF9F7;
+       --grp-grad:linear-gradient(90deg,rgba(193,48,33,0) 0%,#C13021 22%,#A82818 50%,#D9503F 78%,rgba(217,80,63,0) 100%)}
+  body.th-en{--hd-grad:linear-gradient(100deg,#00487A 0%,#0071BC 60%,#2E8FD0 100%);--hd-soft:#D6E9F6;
+       --acc:#0071BC;--acc2:#AEC90B;--th-bg:#F2F7FB;--zebra:#F6FAFD;
+       --grp-grad:linear-gradient(90deg,rgba(0,113,188,0) 0%,#0071BC 22%,#005A96 50%,#2E8FD0 78%,rgba(46,143,208,0) 100%)}
+  /* Issuing-brand logos are sized to the same visual weight as the Wellforces mark:
+     equal ink area, so height scales by sqrt(Wellforces aspect / logo aspect). */
+  body{--lk:1}
+  /* Archilight and Envo are then taken down a step: their heavy wordmarks read large. */
+  body.th-al{--lk:.6}
+  /* The smaller Archilight mark would sit high in the band; drop it a touch. */
+  body.th-al .cover .wf,body.th-al .cover .wf-w{margin-top:1.8mm} body.th-psm{--lk:1.06} body.th-en{--lk:.85}
+  /* Gradient band with soft circles across the paper edge (brand refresh, Oct 2026);
+     the table keeps the page margin. */
+  .sty-a .a4{padding-top:0}
+  .sty-a .wf{display:none}
+  .sty-a .wf-w{display:block}
+  .sty-a .cover,.sty-a .runhd{position:relative;overflow:hidden;color:#fff;margin:0 calc(-1*var(--padx)) 5mm;
+       background:var(--hd-grad)}
+  .sty-a .cover::before,.sty-a .cover::after,.sty-a .runhd::before{content:"";position:absolute;border-radius:50%;
+       background:rgba(255,255,255,.08)}
+  .sty-a .cover::before{width:95mm;height:95mm;right:38mm;top:-62mm}
+  .sty-a .cover::after{width:60mm;height:60mm;left:-34mm;bottom:-34mm;background:rgba(255,255,255,.07)}
+  .sty-a .runhd::before{width:40mm;height:40mm;right:30mm;top:-26mm}
+  .sty-a .cover>*,.sty-a .runhd>*{position:relative;z-index:1}
+  .sty-a .cover{display:grid;grid-template-columns:1fr auto;grid-template-areas:"top ct" "main main";
+       column-gap:8mm;padding:5mm var(--padx) 5mm}
+  .sty-a .cv-top{grid-area:top;flex-direction:column;align-items:flex-start;gap:2.5mm}
+  .sty-a .cover .wf-w{height:calc(8mm * var(--lk))}
+  .sty-a .cv-main{grid-area:main;margin-top:.5mm}
+  .sty-a .cv-main::before{content:"Product Selection Guide";display:block;font-size:9px;letter-spacing:.2em;
+       text-transform:uppercase;color:var(--hd-soft);margin-bottom:1mm}
+  .sty-a h1{font-size:25px;font-weight:700;line-height:1.1;text-transform:uppercase}
+  .sty-a .cover.noeyebrow .cv-main::before{display:none}
+  .sty-a .cv-meta{display:none}
+  /* Same type as the table: labels set like its header, values like its cells. */
+  .sty-a .cv-info{grid-area:ct;display:block;text-align:right;font-size:10px;line-height:1.8;white-space:nowrap}
+  .sty-a .cv-info i{font-style:normal;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+       color:var(--hd-soft);margin-right:1mm}
+  .sty-a .runhd{padding:2.6mm var(--padx);margin-bottom:3mm}
+  .sty-a .runhd .wf-w{height:calc(5mm * var(--lk))}
+  .sty-a .runhd .rh-t{text-align:right;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+  .sty-a .runhd .rh-p{display:none}
+  .sty-a thead th{background:var(--th-bg);color:var(--acc);border:none;border-bottom:2px solid var(--acc2);
+       font-size:9px;text-transform:uppercase;letter-spacing:.02em;padding:6px 5px}
+  .sty-a tbody td{border:1px solid #fff;background:var(--tint)}
+  .sty-a tr.grp td{color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;padding:5px 7px;
+       border:none;background:var(--grp-grad)}
+  /* SKU and price are what people scan for; light banding keeps a long row on track. */
+  .sty-a td.bcell{font-weight:700;color:var(--acc)}
+  .sty-a td.price{font-weight:700}
+  body.nobg.sty-a .a4 tbody tr:not(.grp):nth-child(even) td:not(.brand){background:var(--zebra) !important}
+  /* Footer: notes in small type on the page, then a one-line gradient band with
+     email and web on the left and the page number on the right. */
+  .sty-a .ft{margin-top:2mm}
+  .sty-a .ft-notes,.sty-a .ft-notes.rep{display:block;margin:0 0 1.8mm;font-size:8px;line-height:1.5;color:var(--wf-sub)}
+  .sty-a .ft-notes div{display:inline;margin-right:2.5mm}
+  .sty-a .ft-notes .tiernote{color:var(--acc)}
+  .sty-a .ft-bar{position:relative;overflow:hidden;margin:0 calc(-1*var(--padx));padding:2.4mm var(--padx) 2.8mm;color:#fff;
+       background:var(--hd-grad)}
+  .sty-a .ft-bar::before{content:"";position:absolute;width:40mm;height:40mm;border-radius:50%;
+       background:rgba(255,255,255,.08);right:30mm;top:-8mm}
+  .sty-a .ft-bar>*{position:relative;z-index:1}
+  .sty-a .ft-co{flex-wrap:nowrap;column-gap:6mm;font-size:9px;white-space:nowrap}
+  .sty-a .ft-co span[data-k]:not([data-k="Email"]):not([data-k="Web"]){display:none}
+  .sty-a .ft-co .ic{display:inline;color:var(--hd-soft);margin-right:1.4mm}
+  .sty-a .ft-co b,.sty-a .ft-co .cpy{display:none}
+  .sty-a .pageno{font-weight:700;color:#fff;font-size:9px}
+
+  /* ===== Text only -- the plainest sheet: black on white, no photos, no colour
+     bands, hairline rules; prints the same on any office printer. ===== */
+  .sty-t .a4{padding-top:8mm;color:#000}
+  .sty-t .a4 .wf{filter:grayscale(1) brightness(0)}
+  .sty-t .cover{display:grid;grid-template-columns:1fr auto;align-items:end;column-gap:8mm;
+       padding-bottom:3mm;margin-bottom:4mm}
+  .sty-t .cover .wf{height:calc(8mm * var(--lk))}
+  .sty-t .cv-main{grid-column:1;margin-top:1.5mm}
+  .sty-t h1{font-size:20px;font-weight:700;line-height:1.15;color:#000}
+  .sty-t .cv-meta,.sty-t .cv-partner{display:none}
+  .sty-t .cv-info{display:block;grid-column:2;grid-row:1/3;align-self:end;text-align:right;font-size:9.5px;line-height:1.7;white-space:nowrap}
+  .sty-t .cv-info i{font-style:normal;font-weight:700;font-size:8.5px;text-transform:uppercase;letter-spacing:.04em;margin-right:1mm}
+  .sty-t .runhd{padding-bottom:2mm;margin-bottom:3mm}
+  .sty-t .runhd .wf{height:calc(5mm * var(--lk))}
+  .sty-t .runhd .rh-t{flex:1;text-align:right;font-size:9.5px;font-weight:700}
+  .sty-t .runhd .rh-p{display:none}
+  .sty-t thead th{color:#000;font-size:8.5px;text-transform:uppercase;letter-spacing:.03em;padding:4px 3px;
+       border-bottom:1.5px solid #000;background:none}
+  .sty-t tr.grp td{text-align:center;color:#000;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;
+       padding:4px 3px;border-top:1px solid #000;border-bottom:1px solid #000;background:none}
+  .sty-t tbody td{color:#000;padding-top:2.5px;padding-bottom:2.5px;background:#fff !important;border-bottom:.5px solid #9A9A9A !important}
+  .sty-t td.bcell,.sty-t td.price{font-weight:700}
+  .sty-t tbody td.brand{width:15mm;padding:2px 4px;border-right:.5px solid #9A9A9A}
+  .sty-t td.brand img{display:none}
+  .sty-t .a4 td.brand span,.sty-t .a4 td.brand.has-logo span{display:inline;font-size:8.5px;font-weight:700;color:#000}
+  .sty-t .a4 .mk{color:#000}
+  .sty-t .ft{padding-top:2mm;margin-top:2mm}
+  .sty-t .ft-notes,.sty-t .ft-notes.rep{display:block;font-size:8px;color:#000;margin-bottom:1.5mm}
+  .sty-t .ft-notes div{display:inline;margin-right:2.5mm}
+  .sty-t .ft-bar{padding-bottom:6mm;color:#000}
+  .sty-t .ft-co{font-size:8px}
+  .sty-t .ft-co .cpy{display:none}
+  /* Same contact line as the colour sheet: email and web only. */
+  .sty-t .ft-co span[data-k]:not([data-k="Email"]):not([data-k="Web"]){display:none}
+  .sty-t .pageno{font-size:8.5px;font-weight:700}
+
+  /* Product rows sit on plain white (section bands and headers keep their colour). */
+  body.nobg .a4 tbody tr:not(.grp) td,body.nobg .a4 tbody td.brand{background:#fff !important}
+  body.nobg .a4 tbody tr:not(.grp) td{border-bottom:1px solid #E6E9EE}
+
+  @media print{
+    @page{size:A4;margin:0}
+    html,body{background:#fff}
+    .bar,.warn{display:none !important}
+    .sheetwrap{padding:0;gap:0;display:block}
+    .a4{box-shadow:none;break-after:page;page-break-after:always}
+    .a4:last-child{break-after:auto;page-break-after:auto}
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-top">
+    <a class="brand" href="select.html" title="Back to the Selector"><img class="lc" src="logos/wellforces-full.png" alt="Wellforces"><img class="lw" src="logos/wellforces-full-white.png" alt="Wellforces"><span>Selection Guide</span></a>
+    <span class="ttl"><input id="titleInp" title="Guide title -- type to rename it on this guide" spellcheck="false"></span>
+    <span style="flex:1"></span>
+    <span class="stat" id="stat"></span>
+    <a class="btn" id="backBtn" href="select.html">&#8592; Selector</a>
+    <button class="btn primary" id="printBtn">&#9113; Print / Save as PDF</button>
+    <button class="btn themebtn" id="themeBtn" title="Switch light / dark"></button>
+  </div>
+  <div class="bar-opts">
+    <!-- Which guide is open is set by the link (or the Selector); the picker stays
+         in the page for the code that keeps it in step, but is not shown. -->
+    <span class="grp" hidden><label>Guide</label><select id="guideSel"></select></span>
+    <span class="grp"><label>Style</label><select id="styleSel"></select></span>
+    <span class="grp"><label>Logo</label><select id="logoSel"></select></span>
+    <span class="grp"><label>Currency</label><select id="curSel"><option>NZD</option><option>USD</option></select></span>
+    <span class="grp"><label>Units</label>
+      <span class="useg" id="unitSeg"><span data-u="mm">mm</span><span data-u="inch">inch</span></span></span>
+    <span class="grp show"><label>Show on guide</label>
+      <span class="joined"><button class="chip" id="priceChip" title="Show the price column">Price</button><select id="tierSel" title="Which price list"></select><span class="chiplbl" id="priceLbl" hidden>Retail excl. GST</span></span>
+      <button class="chip" data-key="spec" title="Adds clickable datasheet links. Useful in a PDF sent by email; on paper they cannot be clicked.">Spec links <span class="chipnote">(PDF only · not for print)</span></button>
+      <button class="chip" data-key="showBrand" title="The column of supplier logos down the left of the table">Brand</button>
+      <button class="chip" data-key="showDate" title="Print the date the guide was created on the cover">Created date</button>
+      <span class="joined"><button class="chip" data-key="showBy">Sales rep</button><input id="byInp" placeholder="Rep name"></span></span>
+  </div>
+</div>
+<div class="warn" id="warn" style="display:none"></div>
+<div class="sheetwrap" id="sheets"></div>
+
+<script src="catalogue.js"></script>
+<script src="prices.js" onerror="window.__noPrices=1"></script>
+<script src="guides.js"></script>
+<script src="logos.js"></script>
+<script>
+/* Wellforces Selection Guide -- read-only viewer.
+   Renders a curated guide (sections of SKUs) as paginated A4 sheets for printing.
+   Specs come from catalogue.js, which is rebuilt from PIM; nothing is edited here.
+   Trade pricing is only available when prices.js is present, i.e. in the sales
+   build -- the public build ships without that file and the tier picker collapses
+   to Retail / None on its own. */
+
+const QS = new URLSearchParams(location.search);
+
+const D = window.WF_DATA || {products:[], families:[]};
+const P = window.WF_PRICES || null;
+const G = Object.assign({}, window.WF_GUIDES || {});
+const LOGOS = window.WF_LOGOS || {};
+
+/* A guide built in select.html arrives at runtime rather than as a bundled file --
+   it is per-session and never written to disk. It joins the dropdown alongside the
+   saved guides so the two behave identically from here on.
+
+   The hash is checked first: it travels with the navigation and so survives
+   browsers that give every file:// document an opaque origin (Safari), where
+   localStorage would come back empty. */
+(function loadCustom(){
+  const m = location.hash.match(/[#&]g=([^&]+)/);
+  if (m) {
+    try { G['custom'] = JSON.parse(decodeURIComponent(m[1])); return; }
+    catch (e) { console.warn('custom guide in the URL was unreadable:', e); }
+  }
+  try {
+    const stored = localStorage.getItem('WF_CUSTOM_GUIDE');
+    if (stored) G['custom'] = JSON.parse(stored);
+  } catch (e) {
+    console.warn('could not read the custom selection:', e);
+  }
+})();
+
+const BY_SKU = {};
+D.products.forEach(p => { BY_SKU[p.sku] = p; });
+const FAM = {};
+(D.families||[]).forEach(f => { FAM[f.key] = f; });
+
+/* Rows per sheet. The first page holds fewer because the title block sits above
+   the table. Overridable via ?rows1=&rowsn= so the limits can be re-tuned against
+   a real print when a guide uses taller rows (photos, wrapped comment columns)
+   without editing the file. Too high and content overflows onto a second
+   physical page with no header.
+   Measured against this guide's printed output: 24/30 is the largest that still
+   fits with 20px product photos, 28/38 overflows. Defaults sit a little under the
+   ceiling for headroom. */
+const ROWS_QS = [+QS.get('rows1') || 0, +QS.get('rowsn') || 0];
+
+/* The three print looks. Each has its own header/footer heights, so each carries
+   its own rows-per-page -- [first page, later pages], measured against the LED driver
+   guide one row under the largest that fits. render() flags any sheet that still overflows. */
+const STYLES = {
+  a: {name: 'Colour · with photos', rows: [24, 27]},
+  // Plain black-and-white text sheet, no photo column.
+  t: {name: 'Black & white · text only', rows: [34, 38], hide: ['__img']},
+};
+/* Rows per sheet. The style's figures are only a starting point: after each render
+   the sheets are measured and the counts moved until every sheet is as full as it
+   can be without spilling (fitRows). An explicit ?rows1= / ?rowsn= is taken as asked. */
+const FIT = {key: '', c1: 0, cn: 0, lock1: false, lockN: false, steps: 0};
+const rowsCap = first => ROWS_QS[first ? 0 : 1] || (first ? FIT.c1 : FIT.cn) || STYLES[state.style].rows[first ? 0 : 1];
+
+/* The brand the guide is issued under (the Logo picker). Each sets the logo,
+   contact details and colour theme, and the currency it normally trades in.
+   Sources (October 2026): wellforces.co.nz; archilight.nz (its contact link is
+   contact@archilight.co.nz);
+   powersupplymall.com (the US store); envolighting.com (Envo website project). */
+const BRANDS = {
+  Wellforces: {
+    logo: 'logos/wellforces-full.png', logoWhite: 'logos/wellforces-full-white.png',
+    tagline: 'Reliable power for every NZ install', theme: 'wf', cur: 'NZD',
+    contact: [
+      ['Call',     '0800 88 87 86'],
+      ['WhatsApp', '+64 22 522 4414'],
+      ['Email',    'contact@wellforces.co.nz'],
+      ['Web',      'wellforces.co.nz'],
+      ['Showroom', '60 Apollo Drive, Rosedale, Auckland 0632'],
+    ],
+    copyright: 'Wellforces\u2122 Ltd',
+    search: 'https://wellforces.co.nz/search?q=',
+  },
+  Archilight: {
+    logo: 'logos/brand-archilight.png', logoWhite: 'logos/brand-archilight-white.png',
+    tagline: '', theme: 'al', cur: 'NZD',
+    contact: [
+      ['Email',    'contact@archilight.co.nz'],
+      ['Web',      'archilight.nz'],
+    ],
+    copyright: 'Archilight\u2122',
+  },
+  PowerSupplyMall: {
+    logo: 'logos/brand-psm.png', logoWhite: 'logos/brand-psm-white.png',
+    tagline: '', theme: 'psm', cur: 'USD',
+    contact: [
+      ['Call',     '888-228-9138'],
+      ['Email',    'contact@powersupplymall.com'],
+      ['Web',      'powersupplymall.com'],
+    ],
+    copyright: 'Power Supply Mall',
+    search: 'https://powersupplymall.com/search?q=',
+  },
+  Envo: {
+    logo: 'logos/brand-envo.png', logoWhite: 'logos/brand-envo-white.png',
+    tagline: '', theme: 'en', cur: 'NZD',
+    contact: [
+      ['Email',    'contact@envolighting.com'],
+      ['Web',      'envolighting.com'],
+    ],
+    copyright: 'Envo Lighting',
+  },
+};
+const brand = () => BRANDS[state.logo] || BRANDS.Wellforces;
+// Email and web print as links, so the PDF opens them.
+const contactLink = (k, v) => k === 'Email' ? '<a href="mailto:'+esc(v)+'">'+esc(v)+'</a>'
+                            : k === 'Web'   ? '<a href="https://'+esc(v)+'">'+esc(v)+'</a>' : esc(v);
+// Line icons for the contact details (style 1 shows them).
+const ICON = {
+  Call:     '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
+  WhatsApp: '<path d="M21 11.5a8.4 8.4 0 0 1-12.6 7.3L3 21l2.3-5.2A8.4 8.4 0 1 1 21 11.5z"/>',
+  Email:    '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/>',
+  Web:      '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>',
+  Showroom: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+};
+const icon = k => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+(ICON[k]||'')+'</svg>';
+const NUMERIC_UNITS = {V:1, W:1, A:1, mm:1, yr:1, lm:1, K:1};
+
+const state = {
+  // A link to a guide that no longer exists opens the first one rather than failing.
+  slug: G[QS.get('guide')] ? QS.get('guide') : Object.keys(G)[0],
+  tier: QS.get('tier') || 'retail',
+  unit: QS.get('unit') === 'inch' ? 'inch' : QS.get('unit') === 'mm' ? 'mm' : null,  // null: follow the currency
+  logo: BRANDS[QS.get('logo')] ? QS.get('logo') : 'Wellforces',
+  cur: QS.get('cur') === 'USD' ? 'USD' : QS.get('cur') === 'NZD' ? 'NZD' : null,   // null: the brand's own
+  style: STYLES[QS.get('style')] ? QS.get('style') : 'a',
+  spec: QS.get('spec') === 'on',  // spec links are off unless asked for
+  showDate: QS.get('date') !== 'off',
+  // The sales rep shown on the cover: ?by= wins, else the name this browser last typed.
+  by: QS.get('by') ?? (() => { try { return localStorage.getItem('WF_GUIDE_BY') || ''; } catch (e) { return ''; } })(),
+  showBy: QS.get('byshow') !== 'off',
+  showBrand: QS.get('brand') !== 'off',   // the supplier Brand column, on unless switched off
+  title: QS.get('title') || ''   // a rename typed on this page; empty = the guide's own title
+};
+/* Currency decides the market. USD is the US: inches and US dates, and prices
+   off because no US price list exists yet; NZD is New Zealand: mm and GST
+   prices. A brand switch resets the currency to the brand's own. */
+let nzTier = state.tier;
+function applyRegion(){
+  if (state.cur === 'USD'){
+    if (state.tier !== 'none') nzTier = state.tier;
+    state.tier = 'none';
+    state.unit = 'inch';
+  } else {
+    if (state.tier === 'none') state.tier = nzTier === 'none' ? 'retail' : nzTier;
+    state.unit = 'mm';
+  }
+}
+{
+  const unitAsked = state.unit;
+  if (!state.cur) state.cur = brand().cur;
+  applyRegion();
+  if (unitAsked) state.unit = unitAsked;
+  if (state.cur === 'NZD' && QS.get('tier')) state.tier = QS.get('tier');
+}
+const regionDate = (opts) => new Date().toLocaleDateString(state.cur === 'USD' ? 'en-US' : 'en-NZ', opts);
+// Another brand's guide must not print "Wellforces" in its title.
+const guideTitle = t => state.logo === 'Wellforces' ? t : String(t).replace(/^Wellforces\s+/, '');
+// The title as printed, and as shown in the title box, so the two always agree.
+// A guide's own title drops "Wellforces" where the logo already says it (style 1,
+// or another brand's guide); a title typed into the box prints exactly as typed.
+// A selection made in the selector already carries the title its maker typed there,
+// so it prints as typed too.
+const shownTitle = () => state.title
+  || (state.slug !== 'custom' ? String(G[state.slug].title).replace(/^Wellforces\s+/, '')
+                                                      : guideTitle(G[state.slug].title));
+
+/* Curation lists the columns; the viewer decides which of them this rendering
+   can honestly show. "No prices" must drop the Price column, not print a column
+   of em dashes; the Spec column is a list of URLs, which on paper is dead ink,
+   so it only appears when the toolbar switches it on -- and then it shows on
+   screen AND in the print, so the preview never lies about the output. */
+function visibleCol(k){
+  if (k === '__price') return state.tier !== 'none';
+  if (k === '__spec')  return state.spec;
+  return true;
+}
+
+/* ---------- helpers ---------- */
+const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function mm2unit(v){
+  const n = parseFloat(v);
+  if (isNaN(n)) return null;
+  return state.unit === 'inch' ? +(n/25.4).toFixed(2) : +n.toFixed(1);
+}
+const unitLabel = () => state.unit === 'inch' ? 'in' : 'mm';
+
+/* Size/Profile are stored as "162.5×42.5×32" in millimetres. Convert each axis
+   rather than the whole string so the inch toggle works on every component.
+   The unit is not repeated per cell -- the column header already carries it. */
+function fmtDims(s){
+  const parts = String(s).split('×').map(mm2unit).filter(v => v!=null);
+  return parts.length ? parts.join('×') : '—';
+}
+
+function colMeta(fam, k){
+  const f = FAM[fam];
+  if (!f) return null;
+  return (f.facets||[]).concat(f.columns||[]).find(x => x.k === k) || null;
+}
+
+function money(v){ return v==null ? '—' : '$' + Number(v).toFixed(2); }
+
+/* Tier price = round_half_up(retail * pct / 100), and it must agree with the
+   Python builder to the cent.
+
+   Doing this in floating point is WRONG and quietly loses money: 191.02 * 75%
+   is exactly 143.265, but the nearest double is 143.26499999999999, so
+   Math.floor(x*100 + 0.5) yields 143.26 where the correct trade price is 143.27.
+   The pricing template is full of percentages like 82.45 that land on these
+   half-cent boundaries, so this is common, not a corner case.
+
+   So: exact integer arithmetic on scaled decimal strings, no floats anywhere. */
+function scaled(s){
+  // "82.45" -> {n: 8245, scale: 100};  "75" -> {n: 75, scale: 1}
+  const str = String(s).trim();
+  const dot = str.indexOf('.');
+  if (dot < 0) return {n: BigInt(str), scale: 1n};
+  const decimals = str.length - dot - 1;
+  return {n: BigInt(str.replace('.', '')), scale: 10n ** BigInt(decimals)};
+}
+
+function tierCents(retailStr, pctStr){
+  const r = scaled(retailStr), p = scaled(pctStr);
+  // cents = r/r.scale * p/p.scale / 100 * 100  ->  r.n*p.n / (r.scale*p.scale)
+  const numer = r.n * p.n;
+  const denom = r.scale * p.scale;
+  // round half up on a non-negative rational
+  return (2n * numer + denom) / (2n * denom);
+}
+
+function tierPrice(sku){
+  const prod = BY_SKU[sku];
+  if (state.tier === 'none') return null;
+  if (state.tier === 'retail') return prod && prod.price != null ? Number(prod.price) : null;
+  if (!P) return null;
+  const e = P.products[sku];
+  if (!e || !e.nzd || !e.tplcat) return null;
+  const row = P.template[e.tplcat];
+  const cell = row && row[state.tier];
+  if (!cell) return null;
+  return Number(tierCents(e.nzd, cell.pct)) / 100;
+}
+
+function cellValue(sku, k, notes){
+  const p = BY_SKU[sku];
+  if (!p) return '—';
+  if (k === '__img')   return p.img ? '<img loading="lazy" src="'+esc(p.img)+'" alt="">' : '';
+  // In the PDF a SKU opens the issuing store's search for it (Archilight's site has no SKU search).
+  if (k === '__sku')   return brand().search
+    ? '<a class="skl" href="'+esc(brand().search + encodeURIComponent(sku))+'">'+esc(sku)+'</a>' : '<span>'+esc(sku)+'</span>';
+  if (k === '__spec')  return p.spec ? '<a class="lnk" href="'+esc(p.spec)+'">PDF</a>' : '—';
+  if (k === '__price') return money(tierPrice(sku));
+  if (notes && notes[k]) return esc(notes[k]);
+  if (k === 'Size' || k === 'Profile') return fmtDims(p.a[k] || '');
+  // The column is headed "Series", so a value need not end with the word again.
+  if (k === 'Series') return esc(String(p.a[k] || '—').replace(/\s+series$/i, ''));
+  const v = p.a[k];
+  if (v == null || v === '') return '—';
+  // Warranty reads as prose in the printed guide, matching the 2025 original,
+  // not as the raw metric "5yr".
+  if (k === 'Warranty Period') return esc(v + (Number(v) === 1 ? ' Year' : ' Years'));
+  const m = colMeta(p.family, k);
+  const u = m && m.unit;
+  return esc(u && NUMERIC_UNITS[u] ? v + u : v);
+}
+
+/* A product with no spec values at all renders as a row of em dashes, which in a
+   customer-facing PDF reads as a broken document. The six XLG SKUs are in this
+   state in PIM (disabled, no family, no attributes). Drop them from the sheet and
+   surface them in the on-screen warning instead of printing the empty row. */
+function isEmptyShell(sku){
+  const p = BY_SKU[sku];
+  if (!p) return false;
+  const a = p.a || {};
+  const real = Object.keys(a).filter(k => k !== 'Brand' && k !== 'Series' && a[k] !== '');
+  return real.length === 0;
+}
+
+function headerLabel(fam, k, guide){
+  if (k === '__brand') return 'Brand';
+  if (k === '__img')   return 'Image';
+  if (k === '__sku')   return 'SKU';
+  if (k === '__spec')  return 'Spec';
+  if (k === '__price') return priceHeader();
+  if (k === 'Size')    return 'Size L×W×H (' + unitLabel() + ')';
+  if (k === 'Profile') return 'Profile W×H (' + unitLabel() + ')';
+  const m = colMeta(fam, k);
+  return (m && m.label) || k;
+}
+
+function priceHeader(){
+  if (state.tier === 'retail') return 'Price excl. GST';
+  return esc(state.tier) + ' excl. GST';
+}
+
+/* "Wellforces LED Strips Comparison Form" sets the brand light and the subject
+   bold; the Minimal style shows that split, the others print the title solid. */
+// Column headings break at fixed places -- the unit, and "excl./incl. GST" -- so
+// every heading is at most two tidy lines instead of wrapping wherever it runs out.
+// Short figure columns get one equal, snug width so they sit evenly spaced; the
+// spare width goes to the wordy columns (dimming, size, operation mode).
+const SHORT_COLS = new Set(['Output Voltage', 'Power Rating', 'Rated Current', 'Waterproof',
+                            'Warranty Period', 'No. of Output', 'Efficiency']);
+
+function headHtml(label){
+  const html = esc(label)
+    .replace(/\s+(excl\.|incl\.)/i, '\n$1')
+    .replace(/\s*\(([^)]*)\)/g, '\n<span class="unit">($1)</span>');
+  // A heading split here keeps each of its two lines whole.
+  return html.includes('\n') ? html.split('\n').map(l => '<span class="hl">'+l+'</span>').join('<br>') : html;
+}
+
+function titleHtml(t){
+  const m = String(t).match(/^(Wellforces)\s+(.+)$/);
+  return m ? '<span class="tp">' + esc(m[1]) + '</span> <b>' + esc(m[2]) + '</b>' : esc(t);
+}
+
+/* ---------- pagination ---------- */
+/* Flatten the guide into a list of blocks (section heading rows and product
+   rows), then slice into pages. The first page holds fewer rows because the
+   title block sits above the table. A section heading is repeated with
+   "(continued)" whenever a section spans a page break, so no page of a printed
+   guide is ambiguous about what it is listing. */
+function paginate(guide, dropped){
+  const blocks = [];
+  // A Series column that would print the same series on every row of every section
+  // says nothing the section heading doesn't (a DDR-only guide) -- leave it out.
+  const seriesOf = sku => cellValue(sku, 'Series');
+  const sameSeries = guide.sections.every(sec => new Set((sec.skus || []).filter(k => BY_SKU[k]).map(seriesOf)).size <= 1);
+  guide.sections.forEach((sec, si) => {
+    // Every Wellforces guide leads with a Brand column carrying the supplier logo,
+    // unless "Brand" is switched off under Show on guide.
+    const cols = (state.showBrand ? ['__brand'] : []).concat((sec.columns || guide.defaultColumns).filter(k => k !== '__brand' && visibleCol(k)
+                   && !(STYLES[state.style].hide || []).includes(k) && !(k === 'Series' && sameSeries)));
+    const skus = (sec.skus||[]).filter(sku => {
+      if (!BY_SKU[sku]){ dropped.missing.push(sku); return false; }
+      if (isEmptyShell(sku)){ dropped.shells.push(sku); return false; }
+      return true;
+    });
+    // Drop a section that curation emptied out rather than printing a bare heading.
+    if (!skus.length) return;
+    blocks.push({t:'grp', heading:sec.heading, cols, si});
+    skus.forEach(sku => blocks.push({t:'row', sku, cols, heading:sec.heading, si}));
+  });
+
+  const split = (first, next) => {
+    const pages = [];
+    let i = 0;
+    while (i < blocks.length){
+      const cap = pages.length === 0 ? first : next;
+      let chunk = blocks.slice(i, i + cap);
+      i += cap;
+      // never end a page on a dangling heading
+      if (chunk.length && chunk[chunk.length-1].t === 'grp' && i < blocks.length){
+        chunk = chunk.slice(0, -1);
+        i -= 1;
+      }
+      if (chunk.length && chunk[0].t === 'row'){
+        chunk = [{t:'grp', heading:chunk[0].heading, cols:chunk[0].cols, si:chunk[0].si, cont:true}].concat(chunk);
+      }
+      pages.push(chunk);
+    }
+    return pages;
+  };
+  // Sheets fill in order and the remainder runs onto the next, so the list reads
+  // continuously; spreading rows evenly left every sheet half empty.
+  return split(rowsCap(true), rowsCap(false));
+}
+
+/* Move the row counts toward the fullest sheets that still fit: shrink a count
+   when its sheet spills, grow it while there is room for another row. A count
+   that had to shrink is not grown again, so this settles in a few renders. */
+function fitRows(){
+  if (ROWS_QS[0] || ROWS_QS[1] || FIT.steps++ > 40) return false;
+  const boxes = [...document.querySelectorAll('.a4 .tbox')];
+  if (!boxes.length) return false;
+  const over = boxes.map(b => b.scrollHeight > b.clientHeight + 1);
+  const spare = boxes.map(b => b.clientHeight - ((b.querySelector('table') || {}).offsetHeight || 0));
+  const rowH = Math.max(0, ...[...document.querySelectorAll('.a4 tbody tr')].map(r => r.offsetHeight));
+  const n = boxes.length;
+  if (over[0] && FIT.c1 > 4){ FIT.c1--; FIT.lock1 = true; return true; }
+  if (over.slice(1).some(Boolean) && FIT.cn > 4){ FIT.cn--; FIT.lockN = true; return true; }
+  if (!FIT.lock1 && n > 1 && spare[0] > rowH + 2){ FIT.c1++; return true; }
+  if (!FIT.lockN && n > 2 && Math.min(...spare.slice(1, n - 1)) > rowH + 2){ FIT.cn++; return true; }
+  return false;
+}
+
+/* ---------- render ---------- */
+function render(){
+  // A change to anything that alters row heights starts the fit afresh.
+  const key = JSON.stringify([state.slug, state.style, state.title, state.spec, state.tier, state.unit,
+                              state.logo, state.cur, state.showDate, state.showBy, state.by, state.showBrand]);
+  if (key !== FIT.key){
+    Object.assign(FIT, {key, c1: STYLES[state.style].rows[0], cn: STYLES[state.style].rows[1],
+                        lock1: false, lockN: false, steps: 0});
+  }
+  const guide = G[state.slug];
+  const host = document.getElementById('sheets');
+  if (!guide){ host.innerHTML = '<div class="a4">No guide loaded.</div>'; return; }
+
+  const hasPrice = guide.sections.some(s => (s.columns||guide.defaultColumns).includes('__price'));
+  const dropped = {missing:[], shells:[]};
+  const pages = paginate(guide, dropped);
+  const br = brand();
+  const contact = k => (br.contact.find(([key]) => key === k) || [])[1] || '';
+  const T = shownTitle();
+  const wfLogos = () => '<img class="wf" src="'+br.logo+'" alt="'+esc(state.logo)+'">'
+                      + '<img class="wf-w" src="'+br.logoWhite+'" alt="'+esc(state.logo)+'">';
+  const edition = regionDate({month:'long', year:'numeric'});
+  const today = regionDate({day:'numeric', month:'long', year:'numeric'});
+
+  let noPrice = [];
+  // Footnotes tied to SKUs print only when one of those SKUs made it onto the
+  // sheets, and put a '*' on that SKU's cell; a plain-string footnote always prints.
+  // They are New Zealand offers, so a US (USD) sheet carries none.
+  const onSheet = new Set(pages.flat().filter(b => b.t === 'row').map(b => b.sku));
+  const marks = {};
+  const footnotes = (state.cur === 'USD' ? [] : guide.footnotes || []).map(f => typeof f === 'string' ? {text: f} : f)
+    .filter(f => !f.skus || f.skus.some(s => onSheet.has(s)));
+  const mark = '<b class="mk">*</b>';
+  footnotes.forEach(f => (f.skus || []).forEach(s => {
+    const m = marks[s] = marks[s] || {};
+    if (f.col) m[f.col] = mark;
+    if (f.tag) m.__sku = (m.__sku || '') + '<span class="tag">'+esc(f.tag)+'</span>';
+  }));
+  let html = '';
+  pages.forEach((blocks, pi) => {
+    html += '<div class="a4">';
+    if (pi === 0){
+      // Count what is actually printed, not what curation listed -- dropped
+      // shells and missing SKUs must not be claimed on the cover.
+      const printed = pages.reduce((n,pg)=>n+pg.filter(b=>b.t==='row').length,0);
+      // The small "Product Selection Guide" line is dropped when the title already says it.
+      html += '<header class="cover'+(/selection guide/i.test(T) ? ' noeyebrow' : '')+'"><div class="cv-top">' + wfLogos()
+           + '<div class="cv-kick">Product Selection Guide<br>'+esc(contact('Web'))+'</div></div>'
+           + '<div class="cv-main"><div class="cv-eyebrow">Edition '+esc(edition)+'</div>'
+           + '<h1>'+titleHtml(T)+'</h1>'
+           + '<div class="cv-tag">'+esc(brand().tagline)+'</div></div>'
+           + '<div class="cv-meta"><span><i>Issued</i>'+esc(today)+'</span>'
+           + '<span><i>Products</i>'+printed+' product'+(printed===1?'':'s')+'</span>'
+           + '<span><i>Pricing</i>'+(state.tier !== 'none' ? state.cur+' '+priceHeader() : 'Prices on request')+'</span>'
+           + '</div><div class="cv-info">'
+           + (state.showDate ? '<div><i>Created</i> '+esc(today)+'</div>' : '')
+           + (state.showBy && state.by ? '<div><i>Sales Rep</i> '+esc(state.by)+'</div>' : '')
+           + '</div></header>';
+      if (guide.intro) html += '<div class="intro">'+esc(guide.intro)+'</div>';
+    } else {
+      // Later sheets carry a slim running header instead of the cover.
+      html += '<header class="runhd">' + wfLogos()
+           + '<div class="rh-t">'+esc(T)+'</div>'
+           + '<div class="rh-p">'+(pi+1)+' / '+pages.length+'</div></header>';
+    }
+
+    html += '<div class="tbox">';
+    // Brand cells merge down a run of same-brand rows, the way the existing guides
+    // show one supplier logo per block. A section heading row ends a run.
+    const brandOf = b => ((BY_SKU[b.sku] || {}).a || {}).Brand || '';
+    const span = {};
+    blocks.forEach((b, i) => {
+      if (b.t !== 'row') return;
+      const prev = blocks[i-1];
+      if (prev && prev.t === 'row' && brandOf(prev) === brandOf(b)) span[i] = 0, span[span.start]++;
+      else span[i] = 1, span.start = i;
+    });
+    let cols = null, open = false;
+    blocks.forEach(b => {
+      if (b.t === 'grp'){
+        // Only start a new table -- and so repeat the column header -- when this
+        // section's columns actually differ from the one before it. A guide with
+        // 13 same-shaped sections would otherwise print 13 identical header rows
+        // and lose a third of the page to them.
+        const sameShape = open && cols && cols.length === b.cols.length
+                          && cols.every((c, i) => c === b.cols[i]);
+        if (!sameShape){
+          if (open) html += '</tbody></table>';
+          cols = b.cols;
+          const fam = (BY_SKU[(blocks.find(x=>x.t==='row'&&x.heading===b.heading)||{}).sku]||{}).family;
+          html += '<table><thead><tr>'
+               + cols.map(k => '<th'+(k === '__price' ? ' class="price"' : k === '__brand' ? ' class="brand"' : SHORT_COLS.has(k) ? ' class="sn"' : '')+'>'+headHtml(headerLabel(fam, k, guide))+'</th>').join('')
+               + '</tr></thead><tbody>';
+          open = true;
+        }
+        html += '<tr class="grp s'+(b.si % 5)+'"><td colspan="'+cols.length+'">'+esc(b.heading)
+             + (b.cont ? ' (continued)' : '') + '</td></tr>';
+      } else {
+        const notes = (guide.notes||{})[b.sku];
+        const bi = blocks.indexOf(b);
+        html += '<tr class="s'+(b.si % 5)+'">' + cols.map(k => {
+          if (k === '__brand'){
+            if (!span[bi]) return '';
+            const name = brandOf(b), src = LOGOS[name];
+            return '<td class="brand'+(src ? ' has-logo' : '')+'" rowspan="'+span[bi]+'">'
+                 + (src ? '<img src="'+esc(src)+'" alt="'+esc(name)+'">' : '')
+                 + '<span>'+esc(name)+'</span></td>';
+          }
+          const cls = k === '__sku' ? ' class="bcell"'
+                    : k === '__price' ? ' class="price"'
+                    : (k === 'Comment' || k === 'Application' || k === 'Note') ? ' class="note"' : '';
+          if (k === '__price' && tierPrice(b.sku) == null) noPrice.push(b.sku);
+          return '<td'+cls+'>' + cellValue(b.sku, k, notes) + ((marks[b.sku] || {})[k] || '') + '</td>';
+        }).join('') + '</tr>';
+      }
+    });
+    if (open) html += '</tbody></table>';
+    html += '</div>';
+
+    html += '<footer class="ft">';
+    // Notes print on the last sheet; style 1 repeats them in every footer band.
+    {
+      let notes = '';
+      // The price column's own heading says "excl. GST", so the guide's priceNote
+      // ("Prices are exclusive of GST.") is not repeated in the footer.
+      // A SKU-tied footnote sits on the sheets that carry one of its SKUs.
+      const here = new Set(blocks.filter(x => x.t === 'row').map(x => x.sku));
+      footnotes.filter(f => !f.skus || f.skus.some(s => here.has(s)))
+        .forEach(f => notes += '<div>'+esc(f.text)+'</div>');
+      if (notes) html += '<div class="ft-notes'+(pi === pages.length - 1 ? '' : ' rep')+'">'+notes+'</div>';
+    }
+    // The full company contact block replaces the guide's own one-line contact,
+    // which only ever repeated the email and website.
+    // Every contact line comes from the issuing brand, so another brand's sheet
+    // never carries Wellforces details.
+    html += '<div class="ft-inq">For any inquiries, '
+         + (contact('Call') ? 'call <b>'+esc(contact('Call'))+'</b>, ' : '')
+         + 'email '+contactLink('Email', contact('Email'))+' or visit '+contactLink('Web', contact('Web'))+'.'
+         + (contact('Showroom') ? '<br>Showroom: '+esc(contact('Showroom'))
+                                 + (contact('WhatsApp') ? ' · WhatsApp '+esc(contact('WhatsApp')) : '') : '')
+         + '</div>';
+    html += '<div class="ft-bar"><div class="ft-site">'+esc(contact('Web'))+'</div><div class="ft-co">'
+         + brand().contact.map(([k, v]) => '<span data-k="'+esc(k)+'"><span class="ic">'+icon(k)+'</span><b>'+esc(k)+'</b> '+contactLink(k, v)+'</span>').join('')
+         + '<span class="cpy">'+esc('\u00a9 ' + new Date().getFullYear() + ' ' + brand().copyright)+'</span></div>'
+         + '<div class="pageno"><span class="pn-w">Page </span>'+(pi+1)
+         + '<span class="pn-of"> of '+pages.length+'</span></div></div>';
+    html += '</footer></div>';
+  });
+
+  host.innerHTML = html;
+  document.body.className = 'sty-' + state.style + ' nobg th-' + brand().theme;
+  fitWidth();
+
+  const warn = document.getElementById('warn');
+  const msgs = [];
+  const fold = (text, skus) => '<details><summary>'+esc(text)+' <span class="more">Show SKUs</span></summary>'
+                             + esc([...new Set(skus)].join(', '))+'</details>';
+  if (dropped.missing.length) msgs.push(fold(dropped.missing.length+' SKU(s) in this guide are not in the catalogue and were left out.', dropped.missing));
+  if (dropped.shells.length)  msgs.push(fold(dropped.shells.length+' SKU(s) have no spec data in PIM and were left out.', dropped.shells));
+  if (noPrice.length)         msgs.push(fold(noPrice.length+' SKU(s) have no price at this tier and show "—".', noPrice));
+  warn.style.display = msgs.length ? 'block' : 'none';
+  warn.innerHTML = msgs.join('');
+  warn.dataset.base = warn.innerHTML;
+  checkOverflow();
+  // Web fonts change row heights, so check again once they have arrived.
+  if (document.fonts) document.fonts.ready.then(checkOverflow);
+
+  // Save as PDF names the file after the page title.
+  const d = new Date(), iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  document.title = (/^wellforces\b/i.test(T) || state.logo !== 'Wellforces' && T.startsWith(state.logo) ? T : state.logo + ' ' + T) + ' ' + iso;
+  syncURL();
+  showTitle();
+
+  const printed = pages.reduce((n,pg) => n + pg.filter(b => b.t==='row').length, 0);
+  document.getElementById('stat').textContent =
+    pages.length + ' page' + (pages.length>1?'s':'') + ' · ' + printed + ' products';
+  if (fitRows()) render();
+}
+
+/* A sheet whose table is taller than the space left between header and footer
+   would lose rows off the bottom of the printed page. Say so on screen, naming
+   the sheets, rather than let the PDF quietly drop products. */
+function checkOverflow(){
+  const warn = document.getElementById('warn');
+  const over = [...document.querySelectorAll('.a4 .tbox')]
+    .map((t, i) => t.scrollHeight > t.clientHeight + 1
+                 || (t.querySelector('table') || t).scrollWidth > t.clientWidth + 1 ? i + 1 : 0).filter(Boolean);
+  let msg = warn.dataset.base || '';
+  if (over.length) msg += '<div>Sheet ' + over.join(', ')
+    + ' overflow' + (over.length > 1 ? '' : 's') + ' the page in this style -- rows would be cut off. '
+    + 'Lower the rows per page with ?rows1= / ?rowsn= in the address.</div>';
+  warn.innerHTML = msg;
+  warn.style.display = msg ? 'block' : 'none';
+  warn.dataset.overflow = over.join(',');
+}
+
+/* Keep the address in step with the toolbar, so a copied link opens the guide
+   exactly as set up. The hash (a custom selection) is left alone. */
+function syncURL(){
+  const q = new URLSearchParams(location.search);
+  const set = (k, v, dflt) => (v === dflt || v === '' || v == null) ? q.delete(k) : q.set(k, v);
+  set('guide', state.slug);
+  set('style', state.style, 'a');
+  set('logo', state.logo, 'Wellforces');
+  set('cur', state.cur, brand().cur);
+  set('tier', state.tier, state.cur === 'USD' ? 'none' : 'retail');
+  set('unit', state.unit, state.cur === 'USD' ? 'inch' : 'mm');
+  set('spec', state.spec ? 'on' : '', '');
+  set('date', state.showDate ? '' : 'off', '');
+  set('byshow', state.showBy ? '' : 'off', '');
+  set('brand', state.showBrand ? '' : 'off', '');
+  set('by', state.by, '');
+  set('title', state.title, '');
+  const qs = q.toString();
+  try { history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash); } catch (e) {}
+}
+
+/* A sheet whose table is wider than the page would print with its right-hand
+   columns cut off. Step it through the denser levels until it fits. */
+function fitWidth(){
+  document.querySelectorAll('.a4').forEach(sheet => {
+    const box = sheet.querySelector('.tbox'), tbl = box && box.querySelector('table');
+    if (!tbl) return;
+    const fits = () => tbl.scrollWidth <= box.clientWidth + 1;
+    const set = (lvl, nw) => {
+      sheet.classList.remove('d1', 'd2', 'd3', 'nw');
+      if (lvl) sheet.classList.add('d' + lvl);
+      if (nw) sheet.classList.add('nw');
+    };
+    // Prefer every cell on one line, at up to three steps smaller type.
+    for (const lvl of [0, 1, 2, 3]){ set(lvl, 1); if (fits()) return; }
+    // Otherwise cells must wrap: take the largest type whose table is within 12%
+    // of the shortest one, so text is not cramped into three-line cells.
+    const h = [];
+    for (const lvl of [0, 1, 2, 3]){ set(lvl, 0); h[lvl] = fits() ? tbl.offsetHeight : Infinity; }
+    const best = Math.min(...h);
+    set([0, 1, 2, 3].find(l => h[l] <= best * 1.12), 0);
+  });
+}
+
+/* ---------- controls ---------- */
+// The picker names which guide this is; its title lives in the title box beside it.
+function guideLabel(s){
+  if (s !== 'custom') return String(G[s].title || s).replace(/^Wellforces\s+/, '');
+  const n = (G[s].sections || []).reduce((a, x) => a + (x.skus || []).length, 0);
+  return 'My selection \u00b7 ' + n + ' product' + (n === 1 ? '' : 's');
+}
+// The title box mirrors the printed title; left alone while someone is typing in it.
+function showTitle(){
+  const ti = document.getElementById('titleInp');
+  if (ti && document.activeElement !== ti) ti.value = shownTitle();
+}
+// Put the currency, pricing and unit controls back in step with the state.
+function syncRegion(){
+  document.getElementById('curSel').value = state.cur;
+  const ts = document.getElementById('tierSel'), pc = document.getElementById('priceChip');
+  const usd = state.cur === 'USD';
+  if (state.tier !== 'none') ts.value = state.tier;
+  else if (nzTier !== 'none') ts.value = nzTier;
+  pc.classList.toggle('on', state.tier !== 'none');
+  pc.disabled = usd;
+  ts.disabled = usd || state.tier === 'none';
+  document.getElementById('priceLbl').style.opacity = ts.disabled ? .45 : 1;
+  pc.title = usd ? 'No US price list yet -- USD guides print without prices' : 'Show the price column';
+  document.querySelectorAll('#unitSeg span').forEach(x => x.classList.toggle('on', x.dataset.u === state.unit));
+}
+function initControls(){
+  const gs = document.getElementById('guideSel');
+  gs.innerHTML = Object.keys(G).map(s =>
+    '<option value="'+esc(s)+'"'+(s===state.slug?' selected':'')+'>'+esc(guideLabel(s))+'</option>').join('');
+  // The title box shows the title in use; typing renames this guide, and clearing
+  // it (or picking another guide) goes back to the guide's own title.
+  const ti = document.getElementById('titleInp');
+  showTitle();
+  ti.oninput = () => {
+    const v = ti.value.trim();
+    state.title = '';
+    if (v && v !== shownTitle()) state.title = v;
+    render();
+  };
+  ti.onblur = showTitle;
+  gs.onchange = e => { state.slug = e.target.value; state.title = ''; showTitle(); render(); };
+
+  const ss = document.getElementById('styleSel');
+  ss.innerHTML = Object.entries(STYLES).map(([k, v]) =>
+    '<option value="'+k+'"'+(k===state.style?' selected':'')+'>'+esc(v.name)+'</option>').join('');
+  ss.onchange = e => { state.style = e.target.value; render(); };
+
+  const ls = document.getElementById('logoSel');
+  ls.innerHTML = Object.keys(BRANDS).map(n =>
+    '<option'+(n===state.logo?' selected':'')+'>'+esc(n)+'</option>').join('');
+  ls.onchange = e => {
+    state.logo = e.target.value;
+    state.cur = brand().cur;
+    applyRegion(); syncRegion(); render();
+  };
+  const cs = document.getElementById('curSel');
+  cs.onchange = e => { state.cur = e.target.value; applyRegion(); syncRegion(); render(); };
+
+  // Retail only for now. Trade tiers (from prices.js in the sales build) are left
+  // out until those price lists are brought up to date; restore them here then:
+  //   if (P) (P.catalogues||[]).forEach(c => { if (c !== 'All Products') tiers.splice(1, 0, [c, c]); });
+  const tiers = [['retail','Retail excl. GST'], ['none','No prices']];
+  // A ?tier= naming a trade tier must not silently print "—" everywhere in the
+  // public build, which has no price template: fall back to retail instead.
+  if (!tiers.some(([v]) => v === state.tier)){
+    console.warn('tier "'+state.tier+'" unavailable in this build; falling back to retail');
+    state.tier = 'retail';
+  }
+  // Price is a Show-on-guide switch: the chip turns the column on or off, the
+  // list beside it picks which price ("No prices" is the chip switched off).
+  const ts = document.getElementById('tierSel');
+  ts.innerHTML = tiers.filter(([v]) => v !== 'none').map(([v,l]) =>
+    '<option value="'+esc(v)+'">'+esc(l)+'</option>').join('');
+  ts.onchange = e => { state.tier = e.target.value; render(); };
+  // With a single price list there is nothing to choose: show it as a label.
+  ts.hidden = ts.options.length < 2;
+  document.getElementById('priceLbl').hidden = !ts.hidden;
+  document.getElementById('priceChip').onclick = () => {
+    if (state.tier === 'none') state.tier = nzTier !== 'none' ? nzTier : 'retail';
+    else { nzTier = state.tier; state.tier = 'none'; }
+    syncRegion(); render();
+  };
+
+  document.querySelectorAll('#unitSeg span').forEach(sp => sp.onclick = () => {
+    state.unit = sp.dataset.u;
+    syncRegion();
+    render();
+  });
+  syncRegion();
+
+  // Show switches: each chip flips one setting.
+  const bi = document.getElementById('byInp');
+  document.querySelectorAll('.chip[data-key]').forEach(ch => {
+    const key = ch.dataset.key;
+    const sync = () => { ch.classList.toggle('on', state[key]); if (key === 'showBy') bi.disabled = !state.showBy; };
+    sync();
+    ch.onclick = () => { state[key] = !state[key]; sync(); render(); };
+  });
+
+  bi.value = state.by;
+  bi.oninput = () => {
+    state.by = bi.value.trim();
+    try { localStorage.setItem('WF_GUIDE_BY', state.by); } catch (e) {}
+    render();
+  };
+
+  // Light / dark switch, remembered per browser (shared with the selector).
+  const themeBtn = document.getElementById('themeBtn');
+  const showTheme = () => {
+    themeBtn.textContent = document.documentElement.dataset.theme === 'dark' ? '\u2600' : '\u263E';
+  };
+  themeBtn.onclick = () => {
+    const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem('WF_THEME', t); } catch (e) {}
+    showTheme();
+  };
+  showTheme();
+
+  document.getElementById('printBtn').onclick = () => window.print();
+}
+
+initControls();
+render();
+</script>
+</body>
+</html>
